@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../frontend/src:/app/src
+    environment:
+      VITE_API_URL: http://localhost:8000
+
+  backend:
+    build: ../backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend:/app
+    environment:
+      DATABASE_URL: postgresql://dataviz:dataviz@db:5432/dataviz
+      REDIS_URL: redis://redis:6379
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: dataviz
+      POSTGRES_USER: dataviz
+      POSTGRES_PASSWORD: dataviz
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
