@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Bheem DataViz API",
     description="AI-Powered Business Intelligence & Data Visualization",
-    version="0.1.0",
+    version="1.3.0",
     openapi_url="/api/v1/openapi.json",
     lifespan=lifespan,
     redirect_slashes=False  # Avoid 307 redirects that break HTTPS->HTTP
@@ -56,7 +56,7 @@ app.include_router(api_router, prefix="/api/v1")
 async def root():
     return {
         "name": "Bheem DataViz API",
-        "version": "1.3.0",
+        "version": "2.4.0",
         "description": "AI-Powered BI Platform with BheemPassport Auth",
         "docs": "/docs",
         "health": "/health",

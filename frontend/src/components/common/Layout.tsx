@@ -2,21 +2,28 @@ import { Outlet, NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
   Database,
-  Table2,
   BarChart3,
   MessageSquare,
-  Settings,
   ChevronLeft,
   ChevronRight,
+  Wand2,
+  GitBranch,
+  FolderOpen,
+  Gauge,
+  Sparkles,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  { name: 'Dashboards', href: '/dashboards', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
+  { name: 'Quick Charts', href: '/quick-charts', icon: Sparkles },
   { name: 'Connections', href: '/connections', icon: Database },
-  { name: 'Datasets', href: '/datasets', icon: Table2 },
+  { name: 'Transforms', href: '/transforms', icon: Wand2 },
+  { name: 'Models', href: '/models', icon: GitBranch },
+  { name: 'KPIs', href: '/kpis', icon: Gauge },
   { name: 'Charts', href: '/charts/new', icon: BarChart3 },
+  { name: 'Datasets', href: '/datasets', icon: FolderOpen },
   { name: 'AI Assistant', href: '/ai', icon: MessageSquare },
 ]
 

@@ -1,0 +1,118 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: dataviz-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dataviz
+      POSTGRES_PASSWORD: dataviz123
+      POSTGRES_DB: dataviz_test
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dataviz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL Database
+  mysql:
+    image: mysql:8
+    container_name: dataviz-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_USER: dataviz
+      MYSQL_PASSWORD: dataviz123
+      MYSQL_DATABASE: dataviz_test
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: dataviz-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: dataviz
+      MONGO_INITDB_ROOT_PASSWORD: dataviz123
+      MONGO_INITDB_DATABASE: dataviz_test
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: echo "db.runCommand({ping:1})" | mongosh --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MariaDB Database
+  mariadb:
+    image: mariadb:11
+    container_name: dataviz-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: root123
+      MARIADB_USER: dataviz
+      MARIADB_PASSWORD: dataviz123
+      MARIADB_DATABASE: dataviz_test
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (for caching/sessions)
+  redis:
+    image: redis:7-alpine
+    container_name: dataviz-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Firebase Emulator (local Firebase testing)
+  # firebase:
+  #   image: andreysenov/firebase-tools
+  #   container_name: dataviz-firebase
+  #   restart: unless-stopped
+  #   ports:
+  #     - "9000:9000"    # Realtime Database
+  #     - "8085:8085"    # Firestore
+  #     - "9099:9099"    # Auth
+  #     - "4000:4000"    # Emulator UI
+  #   command: firebase emulators:start --project demo-dataviz
+
+volumes:
+  postgres_data:
+  mysql_data:
+  mongodb_data:
+  mariadb_data:
+  redis_data:
+
+networks:
+  default:
+    name: dataviz-db-network

@@ -6,23 +6,22 @@ services:
       context: ../frontend
       dockerfile: Dockerfile.prod
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_API_URL: ${VITE_API_URL:-https://dataviz-api-staging.bheemkodee.com}
     ports:
-      - "3000:80"
+      - "3008:80"
     depends_on:
       - backend
 
   backend:
     build: ../backend
     ports:
-      - "8000:8000"
+      - "8008:8008"
     environment:
-      DATABASE_URL: postgresql://dataviz:dataviz@db:5432/dataviz
+      DATABASE_URL: postgresql+asyncpg://erp_developer:ErpDev%402024%23Secure@65.109.167.218:5432/bheem_dataviz
       REDIS_URL: redis://redis:6379
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-    depends_on:
-      - db
-      - redis
+      PORT: 8008
+    command: uvicorn main:app --host 0.0.0.0 --port 8008
 
   db:
     image: postgres:15-alpine

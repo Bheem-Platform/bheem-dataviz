@@ -14,49 +14,12 @@ import {
   DollarSign,
   Users,
   Shield,
-  Zap,
-  Globe,
-  Play,
   ChevronDown,
   Star,
-  TrendingUp,
-  PieChart,
-  LineChart,
 } from 'lucide-react'
-
-// Animated chart bars for hero
-function AnimatedBars() {
-  return (
-    <div className="flex items-end gap-1 h-32">
-      {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88].map((h, i) => (
-        <div
-          key={i}
-          className="w-3 rounded-t-sm bg-gradient-to-t from-indigo-600 to-violet-500 animate-pulse"
-          style={{
-            height: `${h}%`,
-            animationDelay: `${i * 100}ms`,
-            animationDuration: '2s',
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
-// Floating stat card
-function StatCard({ icon: Icon, value, label, color }: { icon: any; value: string; label: string; color: string }) {
-  return (
-    <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 p-4 flex items-center gap-4">
-      <div className={`w-12 h-12 rounded-xl ${color} flex items-center justify-center`}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      <div>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-sm text-gray-500">{label}</p>
-      </div>
-    </div>
-  )
-}
+import { Navbar } from '@/components/common/Navbar'
+import { Hero } from '@/components/common/Hero'
+import { TrustedPartners } from '@/components/common/TrustedPartners'
 
 // Comparison data
 const comparisonData = [
@@ -193,183 +156,56 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <BarChart3 className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-gray-900">Bheem DataViz</span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Features</a>
-            <a href="#pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Pricing</a>
-            <a href="#comparison" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Compare</a>
-            <a href="#faq" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">FAQ</a>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Link to="/dashboards" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-              Sign In
-            </Link>
-            <Link
-              to="/dashboards"
-              className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 transition-all"
-            >
-              Get Started Free
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            {/* Left Content */}
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100 rounded-full text-indigo-700 text-sm font-medium mb-6">
-                <Zap className="w-4 h-4" />
-                The #1 Power BI & Tableau Alternative
-              </div>
+      <Hero />
 
-              <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                Transform data into
-                <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent"> insights </span>
-                that drive growth
-              </h1>
-
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Enterprise-grade business intelligence with AI analytics, workflow automation, and semantic layer.
-                <span className="font-semibold text-gray-900"> Flat pricing. Unlimited users.</span>
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 mb-10">
-                <Link
-                  to="/dashboards"
-                  className="group flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold rounded-xl hover:shadow-xl hover:shadow-indigo-500/25 transition-all"
-                >
-                  Start Free Trial
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <button className="flex items-center justify-center gap-2 px-8 py-4 bg-gray-50 text-gray-700 font-semibold rounded-xl hover:bg-gray-100 transition-colors border border-gray-200">
-                  <Play className="w-5 h-5 text-indigo-600" />
-                  Watch Demo
-                </button>
-              </div>
-
-              {/* Trust Indicators */}
-              <div className="flex items-center gap-6 pt-8 border-t border-gray-100">
-                <div className="flex -space-x-2">
-                  {['#6366f1', '#8b5cf6', '#a855f7', '#ec4899'].map((color, i) => (
-                    <div key={i} className="w-10 h-10 rounded-full border-2 border-white" style={{ backgroundColor: color }} />
-                  ))}
-                </div>
-                <div>
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-sm text-gray-500">Trusted by 10,000+ data teams</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right - Visual */}
-            <div className="relative">
-              {/* Gradient Background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-100 via-violet-50 to-purple-100 rounded-3xl -rotate-3" />
-
-              {/* Main Dashboard Card */}
-              <div className="relative bg-white rounded-2xl shadow-2xl shadow-indigo-500/10 border border-gray-200 overflow-hidden">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center">
-                      <BarChart3 className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="font-semibold text-gray-900">Sales Dashboard</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">Live</span>
-                  </div>
-                </div>
-
-                {/* Dashboard Content */}
-                <div className="p-6 space-y-4">
-                  {/* KPIs */}
-                  <div className="grid grid-cols-3 gap-4">
-                    {[
-                      { label: 'Revenue', value: '$2.4M', change: '+23%', up: true },
-                      { label: 'Users', value: '12.5K', change: '+18%', up: true },
-                      { label: 'Churn', value: '2.1%', change: '-0.5%', up: false },
-                    ].map((kpi, i) => (
-                      <div key={i} className="p-4 bg-gray-50 rounded-xl">
-                        <p className="text-xs text-gray-500 mb-1">{kpi.label}</p>
-                        <p className="text-xl font-bold text-gray-900">{kpi.value}</p>
-                        <p className={`text-xs font-medium ${kpi.up ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {kpi.change}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Chart */}
-                  <div className="p-4 bg-gray-50 rounded-xl">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-sm font-medium text-gray-700">Revenue Trend</span>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <div className="w-2 h-2 rounded-full bg-indigo-500" />
-                        2024
-                      </div>
-                    </div>
-                    <AnimatedBars />
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating Cards */}
-              <div className="absolute -left-8 top-1/4 transform -translate-y-1/2">
-                <StatCard icon={TrendingUp} value="+147%" color="bg-gradient-to-br from-emerald-500 to-teal-500" label="Growth" />
-              </div>
-              <div className="absolute -right-8 bottom-1/4">
-                <StatCard icon={Users} value="10K+" color="bg-gradient-to-br from-violet-500 to-purple-500" label="Users" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Logos */}
-      <section className="py-12 px-6 bg-gray-50 border-y border-gray-100">
-        <div className="max-w-7xl mx-auto">
-          <p className="text-center text-sm text-gray-500 mb-8">Trusted by data teams at leading companies</p>
-          <div className="flex items-center justify-center gap-12 flex-wrap opacity-60">
-            {['Microsoft', 'Google', 'Amazon', 'Stripe', 'Shopify', 'Airbnb'].map((company, i) => (
-              <span key={i} className="text-xl font-bold text-gray-400">{company}</span>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Trusted Partners */}
+      <TrustedPartners />
 
       {/* Value Props */}
-      <section className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
+      <section className="py-24 px-6 bg-gradient-to-b from-slate-50 via-white to-white relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-full blur-3xl opacity-60" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full blur-3xl opacity-60" />
+        </div>
+
+        <div className="max-w-7xl mx-auto relative">
+          {/* Section header */}
+          <div className="text-center mb-16">
+            
+            <h2 className="text-4xl md:text-4xl text-gray-900 mb-4">
+              Built for scale.
+              <span className="text-indigo-700/90"> Priced for growth.</span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Enterprise-grade analytics without the enterprise price tag.
+            </p>
+          </div>
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: DollarSign, title: 'Save 70-95%', desc: 'vs Power BI & Tableau licensing', color: 'from-emerald-500 to-teal-500' },
-              { icon: Users, title: 'Unlimited Users', desc: 'One flat price, whole team access', color: 'from-blue-500 to-indigo-500' },
-              { icon: Clock, title: '10+ Hrs Saved', desc: 'Weekly with AI & automation', color: 'from-violet-500 to-purple-500' },
-              { icon: Shield, title: '99.9% Uptime', desc: 'Enterprise-grade reliability', color: 'from-rose-500 to-pink-500' },
+              { icon: DollarSign, title: 'Save 70-95%', desc: 'vs Power BI & Tableau licensing' },
+              { icon: Users, title: 'Unlimited Users', desc: 'One flat price, whole team access' },
+              { icon: Clock, title: '10+ Hrs Saved', desc: 'Weekly with AI & automation' },
+              { icon: Shield, title: '99.9% Uptime', desc: 'Enterprise-grade reliability' },
             ].map((item, i) => (
-              <div key={i} className="p-6 bg-white rounded-2xl border border-gray-100 hover:shadow-xl hover:shadow-gray-200/50 transition-all group">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <item.icon className="w-7 h-7 text-white" />
+              <div
+                key={i}
+                className="group relative p-8 bg-white/80 backdrop-blur-sm rounded-lg border border-gray-200/60 hover:border-gray-300 shadow-sm hover:shadow-2xl hover:shadow-gray-200/40 transition-all duration-300 hover:-translate-y-1"
+              >
+                {/* Icon */}
+                <div className="mb-5">
+                  <div className="w-14 h-14 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center group-hover:bg-indigo-100/80 transition-all duration-300">
+                    <item.icon className="w-7 h-7 text-indigo-700/90" strokeWidth={1.5} />
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-gray-600">{item.desc}</p>
+
+                {/* Content */}
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -380,7 +216,7 @@ export function LandingPage() {
       <section id="features" className="py-20 px-6 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl text-gray-900 mb-4">
               Everything you need for
               <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent"> data excellence</span>
             </h2>
@@ -391,8 +227,8 @@ export function LandingPage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, i) => (
-              <div key={i} className="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-xl hover:shadow-gray-200/50 transition-all group">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+              <div key={i} className="bg-white p-8 rounded-lg border border-gray-100 hover:shadow-xl hover:shadow-gray-200/50 transition-all group">
+                <div className={`w-14 h-14 rounded-md bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
                   <feature.icon className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
@@ -407,7 +243,7 @@ export function LandingPage() {
       <section id="comparison" className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl text-gray-900 mb-4">
               See how we
               <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent"> compare</span>
             </h2>
@@ -416,7 +252,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xl shadow-gray-200/50">
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-xl shadow-gray-200/50">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -446,7 +282,7 @@ export function LandingPage() {
           </div>
 
           {/* Cost Savings Banner */}
-          <div className="mt-12 p-8 bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 rounded-2xl text-white">
+          <div className="mt-12 p-8 bg-indigo-700/90 rounded-lg text-white">
             <div className="grid md:grid-cols-3 gap-8 items-center">
               <div className="md:col-span-2">
                 <h3 className="text-2xl font-bold mb-2">Save up to 95% vs Power BI</h3>
@@ -478,7 +314,7 @@ export function LandingPage() {
       <section className="py-20 px-6 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Loved by data teams worldwide</h2>
+            <h2 className="text-4xl text-gray-900 mb-4">Loved by data teams worldwide</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((t, i) => (
@@ -508,7 +344,7 @@ export function LandingPage() {
       <section id="pricing" className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl text-gray-900 mb-4">
               Simple,
               <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent"> transparent </span>
               pricing
@@ -520,9 +356,9 @@ export function LandingPage() {
             {pricing.map((plan, i) => (
               <div
                 key={i}
-                className={`relative p-8 rounded-2xl ${
+                className={`relative p-8 rounded-lg ${
                   plan.highlighted
-                    ? 'bg-gradient-to-b from-indigo-600 to-violet-600 text-white shadow-xl shadow-indigo-500/25'
+                    ? 'bg-indigo-700/90 text-white shadow-xl shadow-indigo-500/25'
                     : 'bg-white border border-gray-200'
                 }`}
               >
@@ -546,8 +382,8 @@ export function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  to="/dashboards"
-                  className={`block w-full py-3 rounded-xl font-semibold text-center transition-all ${
+                  to="/register"
+                  className={`block w-full py-3 rounded-md font-semibold text-center transition-all ${
                     plan.highlighted
                       ? 'bg-white text-indigo-600 hover:bg-gray-100'
                       : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
@@ -565,11 +401,11 @@ export function LandingPage() {
       <section id="faq" className="py-20 px-6 bg-gray-50">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Frequently asked questions</h2>
+            <h2 className="text-4xl text-gray-900 mb-4">Frequently asked questions</h2>
           </div>
           <div className="space-y-4">
             {faqs.map((faq, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div key={i} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   className="w-full flex items-center justify-between p-6 text-left"
@@ -589,15 +425,15 @@ export function LandingPage() {
       {/* CTA */}
       <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 rounded-3xl p-12 text-center text-white">
+          <div className="bg-indigo-700/90 rounded-lg p-12 text-center text-white">
             <h2 className="text-4xl font-bold mb-4">Ready to transform your data?</h2>
             <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
               Join 10,000+ data professionals. Start your free trial today - no credit card required.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                to="/dashboards"
-                className="flex items-center gap-2 px-8 py-4 bg-white text-indigo-600 font-bold rounded-xl hover:bg-gray-100 transition-colors"
+                to="/register"
+                className="flex items-center gap-2 px-8 py-4 bg-white text-indigo-600 font-bold rounded-lg hover:bg-gray-100 transition-colors"
               >
                 Start Free Trial
                 <ArrowRight className="w-5 h-5" />

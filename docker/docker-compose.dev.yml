@@ -6,22 +6,23 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "3008:3008"
     volumes:
       - ../frontend/src:/app/src
     environment:
-      VITE_API_URL: http://localhost:8000
+      VITE_API_URL: https://dataviz-api-staging.bheemkodee.com
 
   backend:
     build: ../backend
     ports:
-      - "8000:8000"
+      - "8008:8008"
     volumes:
       - ../backend:/app
     environment:
       DATABASE_URL: postgresql://dataviz:dataviz@db:5432/dataviz
       REDIS_URL: redis://redis:6379
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      PORT: 8008
+    command: uvicorn main:app --host 0.0.0.0 --port 8008 --reload
     depends_on:
       - db
       - redis

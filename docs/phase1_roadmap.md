@@ -1,0 +1,17 @@
+ Section 1 - Data Preparation (Transform Engine):                                                                                                                                                        
+  - rows as single entities, columns grouped logically                                                                                                                                     
+  - Step-based pipeline: column ops, row ops, data cleaning, joins, aggregations                                                                                                                          
+  - Transform preview and reusable recipes                                                                                                                                                                
+                                                                                                                                                                                                          
+  Section 2 - Data Modeling & Semantic Layer:                                                                                                                                                             
+  - Aggregations tied to date/time relations                                                                                                                                                              
+  - Toggleable YTD, QTD, MTD per aggregation                                                                                                                                                              
+  - One-to-many relationships (v1 focus)                                                                                                                                                                  
+  - Exclusive calendar view                                                                                                                                                                               
+  - Calculation layer with measures and calculated fields                                                                                                                                                 
+                                                                                                                                                                                                                                                                                                                                                                                                          
+  Section 3 - Visualization & Dashboard Builder:                                                                                                                                                          
+  - Core visuals table: Bar, Column, Line, Area, Combo, Pie/Donut, KPI Cards, Table, Matrix                                                                                                               
+  - Time intelligence toggles per measure                                                                                                                                                                 
+  - Visual formatting and interactivity   
+  

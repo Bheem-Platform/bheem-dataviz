@@ -1,10 +1,10 @@
+/* Gridstack styles - must be before @tailwind */
+@import 'gridstack/dist/gridstack.min.css';
+@import 'gridstack/dist/gridstack-extra.min.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Gridstack styles */
-@import 'gridstack/dist/gridstack.min.css';
-@import 'gridstack/dist/gridstack-extra.min.css';
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
@@ -36,17 +36,86 @@
 /* Dashboard grid */
 .grid-stack {
   background: transparent;
+  min-height: 400px;
 }
 
 .grid-stack-item-content {
-  background: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  overflow: hidden;
+  background: transparent;
+  border-radius: 1rem;
+  overflow: visible;
+  inset: 0;
 }
 
-.dark .grid-stack-item-content {
-  background: #1f2937;
+.grid-stack-item-content > div {
+  height: 100%;
+}
+
+/* GridStack placeholder */
+.grid-stack-placeholder > .placeholder-content {
+  background: rgba(99, 102, 241, 0.1);
+  border: 2px dashed rgba(99, 102, 241, 0.5);
+  border-radius: 1rem;
+}
+
+/* Resize handles */
+.grid-stack > .grid-stack-item > .ui-resizable-handle {
+  background: transparent;
+}
+
+.grid-stack > .grid-stack-item:hover > .ui-resizable-se {
+  background: rgba(99, 102, 241, 0.8);
+  width: 16px;
+  height: 16px;
+  right: 4px;
+  bottom: 4px;
+  border-radius: 4px;
+  cursor: se-resize;
+}
+
+.grid-stack > .grid-stack-item:hover > .ui-resizable-e {
+  background: rgba(99, 102, 241, 0.5);
+  width: 6px;
+  right: 0;
+  border-radius: 3px;
+  cursor: e-resize;
+}
+
+.grid-stack > .grid-stack-item:hover > .ui-resizable-s {
+  background: rgba(99, 102, 241, 0.5);
+  height: 6px;
+  bottom: 0;
+  border-radius: 3px;
+  cursor: s-resize;
+}
+
+.grid-stack > .grid-stack-item:hover > .ui-resizable-w {
+  background: rgba(99, 102, 241, 0.5);
+  width: 6px;
+  left: 0;
+  border-radius: 3px;
+  cursor: w-resize;
+}
+
+.grid-stack > .grid-stack-item:hover > .ui-resizable-sw {
+  background: rgba(99, 102, 241, 0.8);
+  width: 16px;
+  height: 16px;
+  left: 4px;
+  bottom: 4px;
+  border-radius: 4px;
+  cursor: sw-resize;
+}
+
+/* Dark mode resize handles */
+.dark .grid-stack > .grid-stack-item:hover > .ui-resizable-se,
+.dark .grid-stack > .grid-stack-item:hover > .ui-resizable-sw {
+  background: rgba(129, 140, 248, 0.8);
+}
+
+.dark .grid-stack > .grid-stack-item:hover > .ui-resizable-e,
+.dark .grid-stack > .grid-stack-item:hover > .ui-resizable-s,
+.dark .grid-stack > .grid-stack-item:hover > .ui-resizable-w {
+  background: rgba(129, 140, 248, 0.5);
 }
 
 /* Chart container */

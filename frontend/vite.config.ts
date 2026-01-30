@@ -10,12 +10,12 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 3008,
     host: true,
-    allowedHosts: ["dataviz-staging.bheemkodee.com", "dev8.bheem.cloud"],
+    allowedHosts: true,
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: "http://localhost:8008",
         changeOrigin: true,
       },
     },
