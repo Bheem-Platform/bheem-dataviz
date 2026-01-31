@@ -16,6 +16,10 @@ class SavedChartBase(BaseModel):
     chart_type: str
     chart_config: Dict[str, Any]
     query_config: Optional[Dict[str, Any]] = None
+    filter_config: Optional[Dict[str, Any]] = None  # Slicer configurations
+    default_filters: Optional[Dict[str, Any]] = None  # Default filter values
+    drill_config: Optional[Dict[str, Any]] = None  # Drill-down/through configuration
+    conditional_formats: Optional[List[Dict[str, Any]]] = None  # Conditional formatting rules
     width: int = 6
     height: int = 4
     position_x: int = 0
@@ -33,6 +37,10 @@ class SavedChartUpdate(BaseModel):
     chart_type: Optional[str] = None
     chart_config: Optional[Dict[str, Any]] = None
     query_config: Optional[Dict[str, Any]] = None
+    filter_config: Optional[Dict[str, Any]] = None
+    default_filters: Optional[Dict[str, Any]] = None
+    drill_config: Optional[Dict[str, Any]] = None
+    conditional_formats: Optional[List[Dict[str, Any]]] = None
     transform_recipe_id: Optional[UUID] = None
     width: Optional[int] = None
     height: Optional[int] = None
@@ -64,6 +72,8 @@ class DashboardBase(BaseModel):
     is_public: bool = False
     is_featured: bool = False
     layout: Optional[Dict[str, Any]] = None
+    global_filter_config: Optional[Dict[str, Any]] = None  # Slicer configurations for dashboard
+    default_filters: Optional[Dict[str, Any]] = None  # Default filter values
 
 
 class DashboardCreate(DashboardBase):
@@ -77,6 +87,8 @@ class DashboardUpdate(BaseModel):
     is_public: Optional[bool] = None
     is_featured: Optional[bool] = None
     layout: Optional[Dict[str, Any]] = None
+    global_filter_config: Optional[Dict[str, Any]] = None
+    default_filters: Optional[Dict[str, Any]] = None
 
 
 class Dashboard(DashboardBase):

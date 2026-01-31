@@ -42,3 +42,8 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
 
 settings = Settings()
+
+
+def get_settings() -> Settings:
+    """Get settings instance"""
+    return settings

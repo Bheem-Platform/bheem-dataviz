@@ -27,12 +27,17 @@ class Dashboard(Base):
     # Layout
     layout = Column(JSON, nullable=True)  # Grid layout configuration
 
+    # Global filter configuration
+    global_filter_config = Column(JSON, nullable=True)  # GlobalFilterConfig with slicers
+    default_filters = Column(JSON, nullable=True)  # Default filter values
+
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     charts = relationship("SavedChart", back_populates="dashboard", cascade="all, delete-orphan")
+    filter_presets = relationship("SavedFilterPreset", backref="dashboard", cascade="all, delete-orphan", foreign_keys="SavedFilterPreset.dashboard_id")
 
 
 class SavedChart(Base):
@@ -56,6 +61,16 @@ class SavedChart(Base):
 
     # Query configuration (if not using semantic model)
     query_config = Column(JSON, nullable=True)  # { schema, table, dimensions, measures, filters }
+
+    # Advanced filter configuration
+    filter_config = Column(JSON, nullable=True)  # Slicer configurations for this chart
+    default_filters = Column(JSON, nullable=True)  # Default filter values
+
+    # Drill-down/through configuration
+    drill_config = Column(JSON, nullable=True)  # DrillConfig with hierarchy and targets
+
+    # Conditional formatting
+    conditional_formats = Column(JSON, nullable=True)  # List of ConditionalFormat
 
     # Display settings
     width = Column(Integer, default=6)  # Grid width (1-12)
@@ -124,3 +139,52 @@ class SuggestedQuestion(Base):
     is_active = Column(Boolean, default=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SavedFilterPreset(Base):
+    """A saved filter preset for reusable filter configurations."""
+    __tablename__ = "saved_filter_presets"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+
+    # Scope - can be global, dashboard-level, or chart-level
+    dashboard_id = Column(UUID(as_uuid=True), ForeignKey("dashboards.id", ondelete="CASCADE"), nullable=True)
+    chart_id = Column(UUID(as_uuid=True), ForeignKey("saved_charts.id", ondelete="CASCADE"), nullable=True)
+
+    # Filter configuration
+    filters = Column(JSON, nullable=False, default=list)  # List of FilterCondition
+    slicers = Column(JSON, nullable=True)  # List of SlicerConfig
+    global_filter_config = Column(JSON, nullable=True)  # GlobalFilterConfig
+
+    # Default preset
+    is_default = Column(Boolean, default=False)
+
+    # Ownership
+    created_by = Column(UUID(as_uuid=True), nullable=True)
+
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class DashboardFilterState(Base):
+    """Persisted filter state for a dashboard session."""
+    __tablename__ = "dashboard_filter_states"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    dashboard_id = Column(UUID(as_uuid=True), ForeignKey("dashboards.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), nullable=True)
+
+    # Current filter state
+    filter_state = Column(JSON, nullable=False, default=dict)  # column -> selected values
+    date_filter_state = Column(JSON, nullable=True)  # date filter configurations
+    cross_filter_state = Column(JSON, nullable=True)  # cross-filter selections
+
+    # Session info
+    session_id = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

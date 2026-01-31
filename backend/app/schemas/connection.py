@@ -18,6 +18,20 @@ class ConnectionCreate(ConnectionBase):
     password: Optional[str] = None
     connection_string: Optional[str] = None  # Alternative to individual fields
 
+    # BigQuery specific
+    project_id: Optional[str] = None
+    credentials_json: Optional[str] = None  # Service account JSON
+    credentials_path: Optional[str] = None  # Path to credentials file
+    dataset_id: Optional[str] = None
+
+    # Snowflake specific
+    account: Optional[str] = None  # Snowflake account identifier
+    warehouse: Optional[str] = None
+    schema: Optional[str] = None
+    role: Optional[str] = None
+    private_key_path: Optional[str] = None
+    private_key_passphrase: Optional[str] = None
+
 
 class ConnectionUpdate(BaseModel):
     name: Optional[str] = None
@@ -48,7 +62,7 @@ Connection = ConnectionResponse
 
 class ConnectionTestRequest(BaseModel):
     """Request body for testing a connection without saving it."""
-    type: Optional[str] = "postgresql"  # postgresql, mysql, mongodb, etc.
+    type: Optional[str] = "postgresql"  # postgresql, mysql, mongodb, bigquery, snowflake
     connection_string: Optional[str] = None
     host: Optional[str] = None
     port: Optional[int] = None
@@ -57,6 +71,20 @@ class ConnectionTestRequest(BaseModel):
     password: Optional[str] = None
     ssl_enabled: Optional[bool] = False
     additional_config: Optional[Dict[str, Any]] = None
+
+    # BigQuery specific
+    project_id: Optional[str] = None
+    credentials_json: Optional[str] = None  # Service account JSON
+    credentials_path: Optional[str] = None  # Path to credentials file
+    dataset_id: Optional[str] = None
+
+    # Snowflake specific
+    account: Optional[str] = None  # Snowflake account identifier
+    warehouse: Optional[str] = None
+    schema: Optional[str] = None
+    role: Optional[str] = None
+    private_key_path: Optional[str] = None
+    private_key_passphrase: Optional[str] = None
 
 
 class ConnectionTestResponse(BaseModel):

@@ -21,6 +21,28 @@ import { LandingPage } from './pages/LandingPage'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { OAuthCallback } from './pages/OAuthCallback'
+import FilterPresets from './pages/FilterPresets'
+import TimeIntelligence from './pages/TimeIntelligence'
+import RowLevelSecurity from './pages/RowLevelSecurity'
+import ScheduledRefresh from './pages/ScheduledRefresh'
+import QuickInsights from './pages/QuickInsights'
+import Workspaces from './pages/Workspaces'
+import AuditLogs from './pages/AuditLogs'
+import EmbedManager from './pages/EmbedManager'
+import CacheManager from './pages/CacheManager'
+import DataProfiler from './pages/DataProfiler'
+// New Phase 1-10 pages
+import AdminDashboard from './pages/AdminDashboard'
+import Billing from './pages/Billing'
+import Reports from './pages/Reports'
+import UserManagement from './pages/UserManagement'
+import Theming from './pages/Theming'
+import Plugins from './pages/Plugins'
+import Integrations from './pages/Integrations'
+import PerformanceMonitor from './pages/PerformanceMonitor'
+import Compliance from './pages/Compliance'
+import SecuritySettings from './pages/SecuritySettings'
+import Subscriptions from './pages/Subscriptions'
 
 function App() {
   return (
@@ -40,6 +62,7 @@ function App() {
       {/* Protected App Routes - Require authentication */}
       <Route element={<PrivateRoute />}>
         <Route element={<Layout />}>
+          {/* Core Pages */}
           <Route path="home" element={<HomePage />} />
           <Route path="dashboards" element={<DashboardList />} />
           <Route path="dashboards/new" element={<DashboardBuilder />} />
@@ -50,6 +73,8 @@ function App() {
           <Route path="sql-lab" element={<SQLLab />} />
           <Route path="kodee" element={<KodeeAnalytics />} />
           <Route path="workflows" element={<Workflows />} />
+
+          {/* Data Management */}
           <Route path="connections" element={<DataConnections />} />
           <Route path="datasets" element={<Datasets />} />
           <Route path="transforms" element={<TransformBuilder />} />
@@ -57,8 +82,41 @@ function App() {
           <Route path="models" element={<SemanticModels />} />
           <Route path="models/:id" element={<SemanticModels />} />
           <Route path="kpis" element={<KPIs />} />
+
+          {/* Advanced Features */}
+          <Route path="filters" element={<FilterPresets />} />
+          <Route path="time-intelligence" element={<TimeIntelligence />} />
+          <Route path="rls" element={<RowLevelSecurity />} />
+          <Route path="schedules" element={<ScheduledRefresh />} />
+          <Route path="insights" element={<QuickInsights />} />
+
+          {/* Enterprise Features */}
+          <Route path="workspaces" element={<Workspaces />} />
+          <Route path="audit" element={<AuditLogs />} />
+          <Route path="embed" element={<EmbedManager />} />
+          <Route path="cache" element={<CacheManager />} />
+          <Route path="profiler" element={<DataProfiler />} />
+
+          {/* Reports & Subscriptions */}
+          <Route path="reports" element={<Reports />} />
+          <Route path="subscriptions" element={<Subscriptions />} />
+
+          {/* Admin & Settings */}
+          <Route path="admin" element={<AdminDashboard />} />
+          <Route path="billing" element={<Billing />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="theming" element={<Theming />} />
+          <Route path="plugins" element={<Plugins />} />
+          <Route path="integrations" element={<Integrations />} />
+          <Route path="performance" element={<PerformanceMonitor />} />
+          <Route path="compliance" element={<Compliance />} />
+          <Route path="security" element={<SecuritySettings />} />
+
+          {/* Charts */}
           <Route path="charts/new" element={<ChartBuilder />} />
           <Route path="charts/:id" element={<ChartBuilder />} />
+
+          {/* AI */}
           <Route path="ai" element={<AIChat />} />
         </Route>
       </Route>
