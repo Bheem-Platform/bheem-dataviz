@@ -30,10 +30,10 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in origins_str.split(",") if origin.strip()]
 
     # BheemPassport
-    BHEEMPASSPORT_URL: str = "http://localhost:8003/api/v1/auth"
+    BHEEMPASSPORT_URL: str = "https://platform.bheem.co.uk/api/v1/auth"
     BHEEMPASSPORT_SECRET: str = "bheem-platform-secret-key-change-in-production"
-    BHEEM_JWT_SECRET: str = "erp-staging-super-secret-jwt-token-with-at-least-32-characters-long"
-    COMPANY_CODE: str = "BHM010"
+    BHEEM_JWT_SECRET: str = "bheem-platform-secret-key-change-in-production"
+    COMPANY_CODE: str = "BHM001"
 
     # Frontend URL (for redirects)
     FRONTEND_URL: str = "http://localhost:5173"

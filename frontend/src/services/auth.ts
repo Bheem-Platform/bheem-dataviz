@@ -1,6 +1,6 @@
 const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 const PASSPORT_URL = import.meta.env.VITE_BHEEMPASSPORT_URL || 'https://platform.bheem.co.uk/api/v1/auth';
-const COMPANY_CODE = import.meta.env.VITE_COMPANY_CODE || 'BHM010';
+const COMPANY_CODE = import.meta.env.VITE_COMPANY_CODE || 'BHM001';
 
 export interface User {
   id: string;
