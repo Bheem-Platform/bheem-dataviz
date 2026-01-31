@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp,
   TrendingDown,
@@ -26,6 +27,10 @@ import {
   ChevronDown,
   ChevronRight,
   Info,
+  Database,
+  ExternalLink,
+  Bell,
+  X,
 } from 'lucide-react';
 import {
   Insight,
@@ -36,119 +41,7 @@ import {
   sortInsightsBySeverity,
   groupInsightsByType,
 } from '../types/insights';
-
-// Mock data
-const mockInsights: Insight[] = [
-  {
-    id: '1',
-    type: 'trend',
-    severity: 'high',
-    title: 'Strong upward trend in Revenue',
-    description: 'Revenue has increased by 23.5% over the last 30 days with a strong correlation (R²=0.89).',
-    details: {
-      column: 'revenue',
-      direction: 'increasing',
-      slope: 1250.5,
-      r_squared: 0.89,
-      change_percent: 23.5,
-    },
-    affected_columns: ['revenue'],
-    confidence: 0.95,
-    generated_at: '2026-01-30T10:00:00Z',
-    suggested_chart_type: 'line',
-  },
-  {
-    id: '2',
-    type: 'outlier',
-    severity: 'medium',
-    title: 'Outliers detected in Order Value',
-    description: '12 records have order values significantly above the normal range (> 3 standard deviations).',
-    details: {
-      column: 'order_value',
-      outlier_type: 'above',
-      count: 12,
-      threshold_high: 15000,
-      mean: 5200,
-      std_dev: 2100,
-    },
-    affected_columns: ['order_value'],
-    confidence: 0.88,
-    generated_at: '2026-01-30T10:00:00Z',
-    suggested_chart_type: 'scatter',
-  },
-  {
-    id: '3',
-    type: 'correlation',
-    severity: 'medium',
-    title: 'Strong correlation: Marketing Spend ↔ Sales',
-    description: 'Marketing spend shows a strong positive correlation (r=0.82) with sales figures.',
-    details: {
-      column_1: 'marketing_spend',
-      column_2: 'sales',
-      correlation_type: 'positive',
-      coefficient: 0.82,
-      p_value: 0.001,
-    },
-    affected_columns: ['marketing_spend', 'sales'],
-    confidence: 0.92,
-    generated_at: '2026-01-30T10:00:00Z',
-    suggested_chart_type: 'scatter',
-  },
-  {
-    id: '4',
-    type: 'seasonality',
-    severity: 'low',
-    title: 'Weekly seasonality detected',
-    description: 'Order volume shows consistent weekly patterns with peaks on Fridays and troughs on Mondays.',
-    details: {
-      column: 'order_count',
-      has_seasonality: true,
-      period: 'weekly',
-      peak_periods: ['Friday'],
-      trough_periods: ['Monday'],
-    },
-    affected_columns: ['order_count'],
-    confidence: 0.78,
-    generated_at: '2026-01-30T10:00:00Z',
-    suggested_chart_type: 'bar',
-  },
-  {
-    id: '5',
-    type: 'significant_change',
-    severity: 'high',
-    title: 'Significant drop in Customer Retention',
-    description: 'Customer retention rate decreased by 15% compared to the previous period. This requires immediate attention.',
-    details: {
-      column: 'retention_rate',
-      change_percent: -15,
-      period_1: 'December 2025',
-      period_2: 'January 2026',
-      is_significant: true,
-    },
-    affected_columns: ['retention_rate'],
-    confidence: 0.94,
-    generated_at: '2026-01-30T10:00:00Z',
-    suggested_chart_type: 'line',
-  },
-  {
-    id: '6',
-    type: 'top_performer',
-    severity: 'low',
-    title: 'Top performing product category',
-    description: 'Electronics category accounts for 45% of total revenue, outperforming other categories by 3x.',
-    details: {
-      dimension: 'category',
-      dimension_value: 'Electronics',
-      measure: 'revenue',
-      value: 2450000,
-      percent_of_total: 45,
-    },
-    affected_columns: ['category', 'revenue'],
-    confidence: 0.99,
-    generated_at: '2026-01-30T10:00:00Z',
-    suggested_chart_type: 'pie',
-  },
-];
+import { insightsApi, connectionsApi, quickChartsApi } from '../lib/api';
 
 const insightIcons: Record<InsightType, React.ElementType> = {
   trend: TrendingUp,
@@ -170,18 +63,214 @@ const severityColors: Record<InsightSeverity, { bg: string; text: string; border
   low: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-800' },
 };
 
+interface Connection {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface TableInfo {
+  schema_name: string;
+  table_name: string;
+  row_count?: number | null;
+  column_count?: number;
+  has_numeric?: boolean;
+  has_temporal?: boolean;
+}
+
 export function QuickInsights() {
-  const [insights, setInsights] = useState<Insight[]>(mockInsights);
+  const navigate = useNavigate();
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [dismissedInsights, setDismissedInsights] = useState<Set<string>>(new Set());
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [tables, setTables] = useState<TableInfo[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<InsightType[]>([]);
   const [selectedSeverity, setSelectedSeverity] = useState<InsightSeverity | 'all'>('all');
   const [sortBy, setSortBy] = useState<'severity' | 'confidence' | 'date'>('severity');
   const [isLoading, setIsLoading] = useState(false);
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
   const [selectedConnection, setSelectedConnection] = useState<string>('');
+  const [selectedTable, setSelectedTable] = useState<string>('');
   const [showDismissed, setShowDismissed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [connectionsLoading, setConnectionsLoading] = useState(true);
+  const [tablesLoading, setTablesLoading] = useState(false);
+
+  // Handle Explore in Charts - navigate to Quick Charts with insight data
+  const handleExploreInCharts = (insight: Insight) => {
+    const [schema, table] = selectedTable.split('.');
+    const params = new URLSearchParams({
+      connection: selectedConnection,
+      schema: schema || 'public',
+      table: table || '',
+    });
+    navigate(`/quick-charts?${params.toString()}`);
+  };
+
+  // Handle Create Alert - navigate to subscriptions/alerts page
+  const handleCreateAlert = (insight: Insight) => {
+    const params = new URLSearchParams({
+      type: 'insight',
+      insightType: insight.type,
+      columns: insight.affected_columns.join(','),
+      connection: selectedConnection,
+      table: selectedTable,
+    });
+    navigate(`/subscriptions?${params.toString()}`);
+  };
+
+  // Handle Dismiss - add to dismissed set
+  const handleDismiss = (insightId: string) => {
+    setDismissedInsights(prev => new Set([...prev, insightId]));
+  };
+
+  // Handle Restore - remove from dismissed set
+  const handleRestore = (insightId: string) => {
+    setDismissedInsights(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(insightId);
+      return newSet;
+    });
+  };
+
+  // Fetch connections from API
+  const fetchConnections = async () => {
+    setConnectionsLoading(true);
+    try {
+      const response = await connectionsApi.list();
+      setConnections(response.data || []);
+    } catch (err) {
+      console.error('Error fetching connections:', err);
+    } finally {
+      setConnectionsLoading(false);
+    }
+  };
+
+  // Fetch tables from connection
+  const fetchTables = async (connectionId: string) => {
+    if (!connectionId) {
+      setTables([]);
+      return;
+    }
+    setTablesLoading(true);
+    try {
+      const response = await quickChartsApi.getTables(connectionId);
+      setTables(response.data?.tables || response.data || []);
+    } catch (err) {
+      console.error('Error fetching tables:', err);
+      setTables([]);
+    } finally {
+      setTablesLoading(false);
+    }
+  };
+
+  // Analyze data source
+  const analyzeDataSource = async () => {
+    if (!selectedTable && !selectedConnection) {
+      setError('Please select a connection and table to analyze.');
+      return;
+    }
+
+    if (!selectedConnection) {
+      setError('Please select a connection first.');
+      return;
+    }
+
+    if (!selectedTable) {
+      setError('Please select a table to analyze.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Parse the selected table (format: "schema.table")
+      const [schema, table] = selectedTable.split('.');
+
+      // Get suggestions/insights for the table
+      const response = await quickChartsApi.getSuggestions(
+        selectedConnection,
+        schema || 'public',
+        table
+      );
+
+      // The response is QuickChartResponse with recommendations array
+      const recommendations = response.data?.recommendations || [];
+
+      // Convert recommendations to insights format
+      const insightsData: Insight[] = Array.isArray(recommendations) ? recommendations.map((r: any) => {
+        // Get column names from dimensions and measures
+        const dimensionCols = (r.dimensions || []).map((d: any) => d.column || d.name);
+        const measureCols = (r.measures || []).map((m: any) => m.column || m.name);
+
+        // Map chart type to insight type
+        const chartTypeToInsightType: Record<string, InsightType> = {
+          line: 'trend',
+          bar: 'comparison',
+          pie: 'distribution',
+          scatter: 'correlation',
+          area: 'trend',
+          histogram: 'distribution',
+        };
+
+        // Build clean details with only simple values
+        const details: Record<string, unknown> = {};
+        if (r.reason) details.reason = r.reason;
+
+        // Add dimension and measure info
+        if (dimensionCols.length > 0) {
+          details.dimensions = dimensionCols.join(', ');
+        }
+        if (measureCols.length > 0) {
+          details.measures = measureCols.join(', ');
+        }
+
+        // Add confidence score
+        details.confidence_score = `${Math.round((r.confidence || 0.7) * 100)}%`;
+
+        return {
+          id: r.id || `insight-${Math.random().toString(36).substr(2, 9)}`,
+          type: chartTypeToInsightType[r.chart_type] || 'comparison',
+          severity: (r.confidence > 0.8 ? 'high' : r.confidence > 0.5 ? 'medium' : 'low') as InsightSeverity,
+          title: r.title || `${r.chart_type} chart`,
+          description: r.description || r.reason || `Recommended ${r.chart_type} visualization`,
+          confidence: r.confidence || 0.7,
+          affected_columns: [...dimensionCols, ...measureCols],
+          suggested_chart_type: r.chart_type,
+          generated_at: new Date().toISOString(),
+          details,
+        };
+      }) : [];
+
+      setInsights(insightsData);
+    } catch (err) {
+      console.error('Error analyzing data:', err);
+      setError('Failed to analyze data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load connections on mount
+  useEffect(() => {
+    fetchConnections();
+  }, []);
+
+  // Fetch tables when connection changes
+  useEffect(() => {
+    if (selectedConnection) {
+      fetchTables(selectedConnection);
+      setSelectedTable(''); // Reset table selection
+      setInsights([]); // Clear insights
+    }
+  }, [selectedConnection]);
 
   // Filter insights
   const filteredInsights = insights.filter(insight => {
+    // Filter by dismissed status
+    const isDismissed = dismissedInsights.has(insight.id);
+    if (isDismissed && !showDismissed) return false;
+
     if (selectedTypes.length > 0 && !selectedTypes.includes(insight.type)) return false;
     if (selectedSeverity !== 'all' && insight.severity !== selectedSeverity) return false;
     return true;
@@ -199,13 +288,6 @@ export function QuickInsights() {
     high: insights.filter(i => i.severity === 'high').length,
     medium: insights.filter(i => i.severity === 'medium').length,
     low: insights.filter(i => i.severity === 'low').length,
-  };
-
-  const handleRefresh = async () => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsLoading(false);
   };
 
   const toggleExpand = (id: string) => {
@@ -227,7 +309,7 @@ export function QuickInsights() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -241,17 +323,42 @@ export function QuickInsights() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {/* Connection Dropdown */}
               <select
                 value={selectedConnection}
                 onChange={(e) => setSelectedConnection(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                disabled={connectionsLoading}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:opacity-50"
               >
-                <option value="">Select Data Source</option>
-                <option value="conn-1">Sales Database</option>
-                <option value="conn-2">Marketing Data</option>
+                <option value="">
+                  {connectionsLoading ? 'Loading...' : 'All Connections'}
+                </option>
+                {connections.map((conn) => (
+                  <option key={conn.id} value={conn.id}>
+                    {conn.name} ({conn.type})
+                  </option>
+                ))}
               </select>
+
+              {/* Table Dropdown */}
+              <select
+                value={selectedTable}
+                onChange={(e) => setSelectedTable(e.target.value)}
+                disabled={tablesLoading || !selectedConnection}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:opacity-50"
+              >
+                <option value="">
+                  {tablesLoading ? 'Loading tables...' : !selectedConnection ? 'Select connection first' : 'Select Table'}
+                </option>
+                {tables.map((t) => (
+                  <option key={`${t.schema_name}.${t.table_name}`} value={`${t.schema_name}.${t.table_name}`}>
+                    {t.schema_name}.{t.table_name} {t.row_count ? `(${t.row_count} rows)` : ''}
+                  </option>
+                ))}
+              </select>
+
               <button
-                onClick={handleRefresh}
+                onClick={analyzeDataSource}
                 disabled={isLoading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
               >
@@ -260,6 +367,13 @@ export function QuickInsights() {
               </button>
             </div>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            </div>
+          )}
 
           {/* Summary Cards */}
           <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -291,11 +405,11 @@ export function QuickInsights() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
         <div className="flex gap-6">
           {/* Sidebar Filters */}
           <div className="w-64 flex-shrink-0">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sticky top-6">
               <h3 className="font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Filter className="w-4 h-4" />
                 Filters
@@ -323,7 +437,7 @@ export function QuickInsights() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Insight Types
                 </label>
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-64 overflow-y-auto">
                   {(Object.keys(INSIGHT_TYPE_LABELS) as InsightType[]).map((type) => {
                     const Icon = insightIcons[type];
                     const count = insightsByType[type]?.length || 0;
@@ -360,14 +474,14 @@ export function QuickInsights() {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Results header */}
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 Showing {sortedInsights.length} of {insights.length} insights
               </span>
               <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
                   {showDismissed ? (
                     <Eye className="w-4 h-4" />
                   ) : (
@@ -384,136 +498,180 @@ export function QuickInsights() {
               </div>
             </div>
 
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">Analyzing data...</p>
+                </div>
+              </div>
+            )}
+
             {/* Insights List */}
-            <div className="space-y-4">
-              {sortedInsights.map((insight) => {
-                const Icon = insightIcons[insight.type];
-                const colors = severityColors[insight.severity];
-                const isExpanded = expandedInsights.has(insight.id);
+            {!isLoading && (
+              <div className="space-y-4">
+                {sortedInsights.map((insight) => {
+                  const Icon = insightIcons[insight.type] || Activity;
+                  const colors = severityColors[insight.severity] || severityColors.low;
+                  const isExpanded = expandedInsights.has(insight.id);
+                  const isDismissed = dismissedInsights.has(insight.id);
 
-                return (
-                  <div
-                    key={insight.id}
-                    className={`bg-white dark:bg-gray-800 rounded-lg shadow border ${colors.border}`}
-                  >
-                    {/* Insight Header */}
+                  return (
                     <div
-                      className="p-4 cursor-pointer"
-                      onClick={() => toggleExpand(insight.id)}
+                      key={insight.id}
+                      className={`bg-white dark:bg-gray-800 rounded-lg shadow border ${colors.border} ${isDismissed ? 'opacity-60' : ''}`}
                     >
-                      <div className="flex items-start gap-4">
-                        <div className={`p-2 rounded-lg ${colors.bg}`}>
-                          <Icon className={`w-5 h-5 ${colors.text}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${colors.bg} ${colors.text}`}>
-                              {insight.severity}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              {INSIGHT_TYPE_LABELS[insight.type]}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              · {Math.round(insight.confidence * 100)}% confidence
-                            </span>
+                      {/* Insight Header */}
+                      <div
+                        className="p-4 cursor-pointer"
+                        onClick={() => toggleExpand(insight.id)}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={`p-2 rounded-lg ${colors.bg}`}>
+                            <Icon className={`w-5 h-5 ${colors.text}`} />
                           </div>
-                          <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                            {insight.title}
-                          </h3>
-                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            {insight.description}
-                          </p>
-                        </div>
-                        <button className="p-1 text-gray-400 hover:text-gray-600">
-                          {isExpanded ? (
-                            <ChevronDown className="w-5 h-5" />
-                          ) : (
-                            <ChevronRight className="w-5 h-5" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Expanded Details */}
-                    {isExpanded && (
-                      <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-700">
-                        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-gray-500 dark:text-gray-400">Affected Columns:</span>
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {insight.affected_columns.map((col) => (
-                                <span
-                                  key={col}
-                                  className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 text-xs"
-                                >
-                                  {col}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              {isDismissed && (
+                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
+                                  Dismissed
                                 </span>
-                              ))}
+                              )}
+                              <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${colors.bg} ${colors.text}`}>
+                                {insight.severity}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {INSIGHT_TYPE_LABELS[insight.type] || insight.type}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                · {Math.round((insight.confidence || 0) * 100)}% confidence
+                              </span>
                             </div>
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                              {insight.title}
+                            </h3>
+                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                              {insight.description}
+                            </p>
                           </div>
-                          {insight.suggested_chart_type && (
+                          <button className="p-1 text-gray-400 hover:text-gray-600">
+                            {isExpanded ? (
+                              <ChevronDown className="w-5 h-5" />
+                            ) : (
+                              <ChevronRight className="w-5 h-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Expanded Details */}
+                      {isExpanded && (
+                        <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-700">
+                          <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                             <div>
-                              <span className="text-gray-500 dark:text-gray-400">Suggested Visualization:</span>
-                              <div className="mt-1 text-gray-700 dark:text-gray-300">
-                                {insight.suggested_chart_type} chart
+                              <span className="text-gray-500 dark:text-gray-400">Affected Columns:</span>
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {(insight.affected_columns || []).map((col) => (
+                                  <span
+                                    key={col}
+                                    className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 text-xs"
+                                  >
+                                    {col}
+                                  </span>
+                                ))}
                               </div>
                             </div>
-                          )}
-                        </div>
-
-                        {/* Details from insight */}
-                        {insight.details && (
-                          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                            <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-                              Details
-                            </h4>
-                            <dl className="grid grid-cols-2 gap-2 text-sm">
-                              {Object.entries(insight.details).map(([key, value]) => (
-                                <div key={key}>
-                                  <dt className="text-gray-500 dark:text-gray-400 capitalize">
-                                    {key.replace(/_/g, ' ')}:
-                                  </dt>
-                                  <dd className="text-gray-900 dark:text-white font-medium">
-                                    {typeof value === 'number'
-                                      ? value.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                                      : String(value)}
-                                  </dd>
+                            {insight.suggested_chart_type && (
+                              <div>
+                                <span className="text-gray-500 dark:text-gray-400">Suggested Visualization:</span>
+                                <div className="mt-1 text-gray-700 dark:text-gray-300">
+                                  {insight.suggested_chart_type} chart
                                 </div>
-                              ))}
-                            </dl>
+                              </div>
+                            )}
                           </div>
-                        )}
 
-                        {/* Actions */}
-                        <div className="mt-4 flex items-center gap-2">
-                          <button className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                            Explore in Charts
-                          </button>
-                          <button className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                            Create Alert
-                          </button>
-                          <button className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                            Dismiss
-                          </button>
+                          {/* Details from insight */}
+                          {insight.details && Object.keys(insight.details).length > 0 && (
+                            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                                Details
+                              </h4>
+                              <dl className="grid grid-cols-2 gap-2 text-sm">
+                                {Object.entries(insight.details).map(([key, value]) => (
+                                  <div key={key}>
+                                    <dt className="text-gray-500 dark:text-gray-400 capitalize">
+                                      {key.replace(/_/g, ' ')}:
+                                    </dt>
+                                    <dd className="text-gray-900 dark:text-white font-medium">
+                                      {typeof value === 'number'
+                                        ? value.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                                        : String(value)}
+                                    </dd>
+                                  </div>
+                                ))}
+                              </dl>
+                            </div>
+                          )}
+
+                          {/* Actions */}
+                          <div className="mt-4 flex items-center gap-2">
+                            {dismissedInsights.has(insight.id) ? (
+                              <button
+                                onClick={() => handleRestore(insight.id)}
+                                className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1"
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                                Restore
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => handleExploreInCharts(insight)}
+                                  className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  Explore in Charts
+                                </button>
+                                <button
+                                  onClick={() => handleCreateAlert(insight)}
+                                  className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1"
+                                >
+                                  <Bell className="w-3 h-3" />
+                                  Create Alert
+                                </button>
+                                <button
+                                  onClick={() => handleDismiss(insight.id)}
+                                  className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1"
+                                >
+                                  <X className="w-3 h-3" />
+                                  Dismiss
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      )}
+                    </div>
+                  );
+                })}
 
-              {sortedInsights.length === 0 && (
-                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
-                  <Info className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                    No insights found
-                  </h3>
-                  <p className="mt-1 text-gray-500 dark:text-gray-400">
-                    Select a data source and click Analyze to generate insights.
-                  </p>
-                </div>
-              )}
-            </div>
+                {sortedInsights.length === 0 && !isLoading && (
+                  <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
+                    <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      No insights found
+                    </h3>
+                    <p className="mt-1 text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                      {selectedTable
+                        ? 'Click Analyze to generate insights for the selected table.'
+                        : 'Select a connection and table, then click Analyze to generate insights.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

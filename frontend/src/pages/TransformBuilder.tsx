@@ -46,10 +46,9 @@ import {
 import { SiPostgresql, SiMysql } from 'react-icons/si'
 import { FaFileCsv, FaFileExcel } from 'react-icons/fa'
 import { IconType } from 'react-icons'
+import { api } from '../lib/api'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api/v1`
-  : '/api/v1'
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
 
 // Types
 interface Connection {
@@ -266,11 +265,9 @@ export function TransformBuilder() {
 
   const fetchConnections = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/connections/`)
-      if (response.ok) {
-        const data = await response.json()
-        setConnections(data.filter((c: Connection) => c.status === 'connected'))
-      }
+      const response = await api.get('/connections/')
+      const data = response.data
+      setConnections(data.filter((c: Connection) => c.status === 'connected'))
     } catch (error) {
       console.error('Failed to fetch connections:', error)
     } finally {
@@ -281,11 +278,8 @@ export function TransformBuilder() {
   const fetchSavedRecipes = async () => {
     try {
       setLoadingRecipes(true)
-      const response = await fetch(`${API_BASE_URL}/transforms/`)
-      if (response.ok) {
-        const data = await response.json()
-        setSavedRecipes(data)
-      }
+      const response = await api.get('/transforms/')
+      setSavedRecipes(response.data)
     } catch (error) {
       console.error('Failed to fetch recipes:', error)
     } finally {
@@ -297,12 +291,8 @@ export function TransformBuilder() {
     if (!confirm('Are you sure you want to delete this recipe?')) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/transforms/${recipeId}`, {
-        method: 'DELETE',
-      })
-      if (response.ok) {
-        fetchSavedRecipes()
-      }
+      await api.delete(`/transforms/${recipeId}`)
+      fetchSavedRecipes()
     } catch (error) {
       console.error('Failed to delete recipe:', error)
     }
@@ -362,10 +352,8 @@ export function TransformBuilder() {
   const fetchTables = async (connectionId: string) => {
     setLoadingTables(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/connections/${connectionId}/tables`)
-      if (response.ok) {
-        setTables(await response.json())
-      }
+      const response = await api.get(`/connections/${connectionId}/tables`)
+      setTables(response.data)
     } catch (error) {
       console.error('Failed to fetch tables:', error)
     } finally {
@@ -376,10 +364,8 @@ export function TransformBuilder() {
   const fetchColumns = async (connectionId: string, schema: string, table: string) => {
     setLoadingColumns(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/connections/${connectionId}/tables/${schema}/${table}/columns`)
-      if (response.ok) {
-        setColumns(await response.json())
-      }
+      const response = await api.get(`/connections/${connectionId}/tables/${schema}/${table}/columns`)
+      setColumns(response.data)
     } catch (error) {
       console.error('Failed to fetch columns:', error)
     } finally {
@@ -506,22 +492,11 @@ export function TransformBuilder() {
         offset: offset,
       }
 
-      const response = await fetch(`${API_BASE_URL}/transforms/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setPreview(data)
-      } else {
-        const error = await response.json()
-        alert(`Preview failed: ${error.detail || 'Unknown error'}`)
-      }
-    } catch (error) {
+      const response = await api.post('/transforms/execute', body)
+      setPreview(response.data)
+    } catch (error: any) {
       console.error('Preview failed:', error)
-      alert('Preview failed')
+      alert(`Preview failed: ${error.response?.data?.detail || error.message || 'Unknown error'}`)
     } finally {
       setLoadingPreview(false)
     }
@@ -575,9 +550,6 @@ export function TransformBuilder() {
       })
 
       const isUpdate = !!editingRecipe
-      const url = isUpdate
-        ? `${API_BASE_URL}/transforms/${editingRecipe.id}`
-        : `${API_BASE_URL}/transforms/`
 
       const body = {
         name: recipeName,
@@ -587,29 +559,24 @@ export function TransformBuilder() {
         steps: cleanedSteps,
       }
 
-      const response = await fetch(url, {
-        method: isUpdate ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-
-      if (response.ok) {
-        setSaveSuccess(true)
-        // Refresh the recipes list
-        await fetchSavedRecipes()
-        // Switch back to list view after a brief delay
-        setTimeout(() => {
-          setSaveSuccess(false)
-          setViewMode('list')
-          setEditingRecipe(null)
-        }, 1500)
+      if (isUpdate) {
+        await api.put(`/transforms/${editingRecipe.id}`, body)
       } else {
-        const error = await response.json()
-        alert(`Save failed: ${error.detail || 'Unknown error'}`)
+        await api.post('/transforms/', body)
       }
-    } catch (error) {
+
+      setSaveSuccess(true)
+      // Refresh the recipes list
+      await fetchSavedRecipes()
+      // Switch back to list view after a brief delay
+      setTimeout(() => {
+        setSaveSuccess(false)
+        setViewMode('list')
+        setEditingRecipe(null)
+      }, 1500)
+    } catch (error: any) {
       console.error('Save failed:', error)
-      alert('Save failed: Network error')
+      alert(`Save failed: ${error.response?.data?.detail || error.message || 'Unknown error'}`)
     } finally {
       setSaving(false)
     }

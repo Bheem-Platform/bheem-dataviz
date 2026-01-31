@@ -6,13 +6,16 @@ Provides endpoints for time-based calculations.
 
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+import logging
 
 from app.database import get_db
 from app.core.security import get_current_user
 from app.schemas.time_intelligence import (
     TimeIntelligenceRequest,
     TimeIntelligenceResponse,
+    TimeIntelligenceResult,
     TimeIntelligenceFunction,
     DateTableConfig,
     COMMON_TIME_INTELLIGENCE_TEMPLATES,
@@ -20,31 +23,173 @@ from app.schemas.time_intelligence import (
     FISCAL_DATE_TABLE_COLUMNS,
 )
 from app.services.time_intelligence_service import get_time_intelligence_service
+from app.services.postgres_service import postgres_service
+from app.services.mysql_service import mysql_service
+from app.services.encryption_service import encryption_service
+from app.models.connection import Connection as ConnectionModel, ConnectionType
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/calculate", response_model=TimeIntelligenceResponse)
 async def calculate_time_intelligence(
     request: TimeIntelligenceRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
     """
     Calculate time intelligence functions.
 
     Supports various time-based calculations like YTD, MTD, SPLY, rolling periods, etc.
-
-    - **connection_id**: Database connection to use
-    - **schema_name**: Schema containing the table
-    - **table_name**: Table to query
-    - **functions**: List of time intelligence functions to calculate
-    - **filters**: Additional filters to apply
-    - **group_by**: Columns to group by
-    - **reference_date**: Reference date (defaults to today)
     """
+    # Get connection details
+    result = await db.execute(
+        select(ConnectionModel).where(ConnectionModel.id == request.connection_id)
+    )
+    conn = result.scalar_one_or_none()
+
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    # Generate SQL and period info from service
     service = get_time_intelligence_service()
-    return service.calculate(request)
+    response = service.calculate(request)
+
+    print(f"DEBUG: Request functions count: {len(request.functions)}")
+    print(f"DEBUG: Connection type: {conn.type}")
+    print(f"DEBUG: Response success: {response.success}")
+
+    if not response.success:
+        return response
+
+    # Build connection string
+    password = None
+    if conn.encrypted_password:
+        password = encryption_service.decrypt(conn.encrypted_password)
+
+    # Execute queries and get actual values
+    updated_results = []
+    for i, func in enumerate(request.functions):
+        result_info = response.results[i] if i < len(response.results) else None
+
+        # Generate individual function SQL
+        sql = service._generate_function_sql(
+            func=func,
+            schema_name=request.schema_name,
+            table_name=request.table_name,
+            reference_date=service._parse_date(request.reference_date) or __import__('datetime').date.today(),
+            filters=request.filters,
+            group_by=request.group_by,
+        )
+
+        try:
+            print(f"DEBUG: Executing for func {func.id}, conn type: {conn.type}")
+            print(f"DEBUG: SQL: {sql[:300]}")
+
+            # Execute query based on connection type
+            if conn.type == ConnectionType.postgresql:
+                conn_str = postgres_service.build_connection_string(
+                    host=conn.host or "localhost",
+                    port=conn.port or 5432,
+                    database=conn.database_name or "",
+                    username=conn.username,
+                    password=password,
+                    extra=conn.additional_config
+                )
+                query_result = await postgres_service.execute_query(conn_str, sql, limit=10)
+            elif conn.type == ConnectionType.mysql:
+                query_result = await mysql_service.execute_query(
+                    host=conn.host or "localhost",
+                    port=conn.port or 3306,
+                    database=conn.database_name or "",
+                    sql=sql,
+                    username=conn.username,
+                    password=password,
+                    limit=10
+                )
+            else:
+                # Unsupported connection type - return without values
+                updated_results.append(result_info)
+                continue
+
+            print(f"DEBUG: Query result: {query_result}")
+
+            # Parse query results
+            if query_result and query_result.get("rows"):
+                row = query_result["rows"][0]
+
+                # Extract values from result
+                value = None
+                comparison_value = None
+                pct_change = None
+
+                # Look for value columns in result
+                from decimal import Decimal
+                for key, val in row.items():
+                    key_lower = key.lower()
+                    measure_col_lower = func.measure_column.lower()
+
+                    # Check for current_value or measure column name (including in compound names like ytd_base_salary)
+                    if 'current_value' in key_lower or key_lower == measure_col_lower or measure_col_lower in key_lower:
+                        if val is not None:
+                            value = float(val) if isinstance(val, (int, float, Decimal)) else None
+                    elif 'comparison' in key_lower:
+                        if val is not None:
+                            comparison_value = float(val) if isinstance(val, (int, float, Decimal)) else None
+                    elif 'pct_change' in key_lower or key_lower == 'change':
+                        if val is not None:
+                            pct_change = float(val) if isinstance(val, (int, float, Decimal)) else None
+                    elif value is None and isinstance(val, (int, float, Decimal)):
+                        # First numeric column as value (fallback)
+                        value = float(val)
+
+                print(f"DEBUG: Extracted value={value}, comparison={comparison_value}, pct={pct_change}")
+
+                updated_results.append(TimeIntelligenceResult(
+                    function_id=func.id,
+                    value=value,
+                    comparison_value=comparison_value,
+                    pct_change=pct_change,
+                    period_start=result_info.period_start if result_info else None,
+                    period_end=result_info.period_end if result_info else None,
+                    comparison_period_start=result_info.comparison_period_start if result_info else None,
+                    comparison_period_end=result_info.comparison_period_end if result_info else None,
+                ))
+            else:
+                # No results - return with null values
+                updated_results.append(TimeIntelligenceResult(
+                    function_id=func.id,
+                    value=None,
+                    comparison_value=None,
+                    pct_change=None,
+                    period_start=result_info.period_start if result_info else None,
+                    period_end=result_info.period_end if result_info else None,
+                    comparison_period_start=result_info.comparison_period_start if result_info else None,
+                    comparison_period_end=result_info.comparison_period_end if result_info else None,
+                ))
+
+        except Exception as e:
+            logger.error(f"Failed to execute time intelligence query: {e}")
+            # Return result with null values on error
+            updated_results.append(TimeIntelligenceResult(
+                function_id=func.id,
+                value=None,
+                comparison_value=None,
+                pct_change=None,
+                period_start=result_info.period_start if result_info else None,
+                period_end=result_info.period_end if result_info else None,
+                comparison_period_start=result_info.comparison_period_start if result_info else None,
+                comparison_period_end=result_info.comparison_period_end if result_info else None,
+            ))
+
+    final_response = TimeIntelligenceResponse(
+        success=True,
+        results=updated_results,
+        query=response.query,
+    )
+    print(f"DEBUG: Final response: {final_response.model_dump()}")
+    return final_response
 
 
 @router.post("/generate-sql")

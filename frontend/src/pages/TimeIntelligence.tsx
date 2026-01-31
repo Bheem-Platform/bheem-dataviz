@@ -31,27 +31,39 @@ import {
   getComparisonLabel,
 } from '../types/timeIntelligence';
 import { TimeIntelligenceFunctionBuilder } from '../components/time-intelligence/TimeIntelligenceFunctionBuilder';
-import api from '../lib/api';
+import api, { timeIntelligenceApi, connectionsApi } from '../lib/api';
 import { cn } from '../lib/utils';
 
 interface Connection {
   id: string;
   name: string;
+  type: string;
+}
+
+interface TableInfo {
+  schema_name: string;
+  name: string;
+  type: string;
+  reference_count?: number;
 }
 
 interface TableColumn {
-  column: string;
+  name: string;
   type: string;
+  nullable?: boolean;
 }
 
 const TimeIntelligence: React.FC = () => {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [selectedConnection, setSelectedConnection] = useState<string>('');
+  const [allTables, setAllTables] = useState<TableInfo[]>([]);
   const [schemas, setSchemas] = useState<string[]>([]);
   const [selectedSchema, setSelectedSchema] = useState<string>('');
-  const [tables, setTables] = useState<string[]>([]);
+  const [tables, setTables] = useState<TableInfo[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [columns, setColumns] = useState<TableColumn[]>([]);
+  const [tablesLoading, setTablesLoading] = useState(false);
+  const [columnsLoading, setColumnsLoading] = useState(false);
 
   const [functions, setFunctions] = useState<TimeIntelligenceFunction[]>([]);
   const [results, setResults] = useState<TimeIntelligenceResult[]>([]);
@@ -60,6 +72,7 @@ const TimeIntelligence: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingFunction, setEditingFunction] = useState<TimeIntelligenceFunction | null>(null);
@@ -70,70 +83,92 @@ const TimeIntelligence: React.FC = () => {
     fetchConnections();
   }, []);
 
-  // Fetch schemas when connection changes
+  // Fetch tables when connection changes
   useEffect(() => {
     if (selectedConnection) {
-      fetchSchemas(selectedConnection);
+      fetchTables(selectedConnection);
+    } else {
+      setAllTables([]);
+      setSchemas([]);
+      setTables([]);
+      setSelectedSchema('');
+      setSelectedTable('');
+      setColumns([]);
     }
   }, [selectedConnection]);
 
-  // Fetch tables when schema changes
+  // Filter tables when schema changes
   useEffect(() => {
-    if (selectedConnection && selectedSchema) {
-      fetchTables(selectedConnection, selectedSchema);
+    if (selectedSchema) {
+      const filtered = allTables.filter(t => t.schema_name === selectedSchema);
+      setTables(filtered);
+      setSelectedTable('');
+      setColumns([]);
+    } else {
+      setTables([]);
     }
-  }, [selectedConnection, selectedSchema]);
+  }, [selectedSchema, allTables]);
 
   // Fetch columns when table changes
   useEffect(() => {
     if (selectedConnection && selectedSchema && selectedTable) {
       fetchColumns(selectedConnection, selectedSchema, selectedTable);
+    } else {
+      setColumns([]);
     }
   }, [selectedConnection, selectedSchema, selectedTable]);
 
   const fetchConnections = async () => {
+    setIsLoading(true);
     try {
-      const response = await api.get('/api/v1/connections');
-      setConnections(response.data.connections || response.data || []);
+      const response = await connectionsApi.list();
+      setConnections(response.data || []);
     } catch (error) {
       console.error('Failed to fetch connections:', error);
+      setFetchError('Failed to load connections');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const fetchSchemas = async (connectionId: string) => {
+  const fetchTables = async (connectionId: string) => {
+    setTablesLoading(true);
     try {
-      const response = await api.get(`/api/v1/connections/${connectionId}/schemas`);
-      setSchemas(response.data.schemas || response.data || []);
-      setSelectedSchema('');
-      setTables([]);
-      setSelectedTable('');
-      setColumns([]);
-    } catch (error) {
-      console.error('Failed to fetch schemas:', error);
-    }
-  };
+      const response = await api.get(`/connections/${connectionId}/tables`);
+      const tableList = response.data || [];
+      setAllTables(tableList);
 
-  const fetchTables = async (connectionId: string, schema: string) => {
-    try {
-      const response = await api.get(`/api/v1/connections/${connectionId}/tables`, {
-        params: { schema },
-      });
-      setTables(response.data.tables || response.data || []);
+      // Extract unique schemas from tables
+      const uniqueSchemas: string[] = [...new Set(tableList.map((t: TableInfo) => t.schema_name))] as string[];
+      setSchemas(uniqueSchemas);
+
+      // Auto-select first schema if only one
+      if (uniqueSchemas.length === 1) {
+        setSelectedSchema(uniqueSchemas[0] as string);
+      } else {
+        setSelectedSchema('');
+      }
       setSelectedTable('');
       setColumns([]);
     } catch (error) {
       console.error('Failed to fetch tables:', error);
+      setAllTables([]);
+      setSchemas([]);
+    } finally {
+      setTablesLoading(false);
     }
   };
 
   const fetchColumns = async (connectionId: string, schema: string, table: string) => {
+    setColumnsLoading(true);
     try {
-      const response = await api.get(`/api/v1/connections/${connectionId}/columns`, {
-        params: { schema, table },
-      });
-      setColumns(response.data.columns || response.data || []);
+      const response = await api.get(`/connections/${connectionId}/tables/${schema}/${table}/columns`);
+      setColumns(response.data || []);
     } catch (error) {
       console.error('Failed to fetch columns:', error);
+      setColumns([]);
+    } finally {
+      setColumnsLoading(false);
     }
   };
 
@@ -141,13 +176,13 @@ const TimeIntelligence: React.FC = () => {
     ['date', 'datetime', 'timestamp', 'timestamptz'].some((t) =>
       col.type.toLowerCase().includes(t)
     )
-  );
+  ).map(col => ({ column: col.name, type: col.type }));
 
   const measureColumns = columns.filter((col) =>
     ['int', 'float', 'decimal', 'numeric', 'double', 'real', 'bigint', 'smallint'].some((t) =>
       col.type.toLowerCase().includes(t)
     )
-  );
+  ).map(col => ({ column: col.name, type: col.type }));
 
   const handleAddFunction = (func: TimeIntelligenceFunction) => {
     if (editingFunction) {
@@ -187,17 +222,60 @@ const TimeIntelligence: React.FC = () => {
     setError(null);
 
     try {
-      const response = await api.post('/api/v1/time-intelligence/calculate', {
-        connectionId: selectedConnection,
-        schemaName: selectedSchema,
-        tableName: selectedTable,
-        functions,
+      // Convert functions to snake_case for backend
+      const convertedFunctions = functions.map(func => ({
+        id: func.id,
+        name: func.name,
+        period_type: func.periodType,
+        date_column: func.dateColumn,
+        measure_column: func.measureColumn,
+        aggregation: func.aggregation,
+        periods: func.periods,
+        offset: func.offset,
+        granularity: func.granularity,
+        use_fiscal_calendar: func.useFiscalCalendar || false,
+        fiscal_config: func.fiscalConfig ? {
+          fiscal_year_start_month: func.fiscalConfig.fiscalYearStartMonth,
+          fiscal_year_start_day: func.fiscalConfig.fiscalYearStartDay,
+          week_starts_on: func.fiscalConfig.weekStartsOn,
+        } : undefined,
+        start_date: func.startDate,
+        end_date: func.endDate,
+        output_column: func.outputColumn,
+        include_comparison: func.includeComparison || false,
+        include_pct_change: func.includePctChange || false,
+      }));
+
+      const response = await timeIntelligenceApi.calculate({
+        connection_id: selectedConnection,
+        schema_name: selectedSchema,
+        table_name: selectedTable,
+        functions: convertedFunctions,
       });
 
-      setResults(response.data.results || []);
+      // Convert results back to camelCase for frontend
+      console.log('API Response:', response.data);
+      const convertedResults = (response.data.results || []).map((r: any) => {
+        console.log('Raw result item:', r);
+        return {
+          functionId: r.function_id,
+          value: r.value,
+          comparisonValue: r.comparison_value,
+          pctChange: r.pct_change,
+          periodStart: r.period_start,
+          periodEnd: r.period_end,
+          comparisonPeriodStart: r.comparison_period_start,
+          comparisonPeriodEnd: r.comparison_period_end,
+        };
+      });
+      console.log('Converted results:', convertedResults);
+
+      setResults(convertedResults);
       setGeneratedSql(response.data.query || '');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to execute calculations');
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to execute calculations';
+      setError(errorMessage);
+      console.error('Calculation error:', err);
     } finally {
       setIsExecuting(false);
     }
@@ -227,9 +305,9 @@ const TimeIntelligence: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -259,39 +337,40 @@ const TimeIntelligence: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
         <div className="grid grid-cols-12 gap-6">
           {/* Left Panel - Data Source & Functions */}
           <div className="col-span-5 space-y-4">
             {/* Data Source Selection */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Data Source</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Data Source</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Connection</label>
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Connection</label>
                   <select
                     value={selectedConnection}
                     onChange={(e) => setSelectedConnection(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    disabled={isLoading}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:opacity-50"
                   >
-                    <option value="">Select connection...</option>
+                    <option value="">{isLoading ? 'Loading...' : 'Select connection...'}</option>
                     {connections.map((conn) => (
                       <option key={conn.id} value={conn.id}>
-                        {conn.name}
+                        {conn.name} ({conn.type})
                       </option>
                     ))}
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Schema</label>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Schema</label>
                     <select
                       value={selectedSchema}
                       onChange={(e) => setSelectedSchema(e.target.value)}
-                      disabled={!selectedConnection}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                      disabled={!selectedConnection || tablesLoading}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
-                      <option value="">Select schema...</option>
+                      <option value="">{tablesLoading ? 'Loading...' : 'Select schema...'}</option>
                       {schemas.map((schema) => (
                         <option key={schema} value={schema}>
                           {schema}
@@ -300,17 +379,17 @@ const TimeIntelligence: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Table</label>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Table</label>
                     <select
                       value={selectedTable}
                       onChange={(e) => setSelectedTable(e.target.value)}
-                      disabled={!selectedSchema}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                      disabled={!selectedSchema || tablesLoading}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
-                      <option value="">Select table...</option>
+                      <option value="">{tablesLoading ? 'Loading...' : 'Select table...'}</option>
                       {tables.map((table) => (
-                        <option key={table} value={table}>
-                          {table}
+                        <option key={table.name} value={table.name}>
+                          {table.name}
                         </option>
                       ))}
                     </select>
@@ -441,6 +520,12 @@ const TimeIntelligence: React.FC = () => {
 
           {/* Right Panel - Results */}
           <div className="col-span-7">
+            {fetchError && (
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-sm">
+                <strong>Warning:</strong> {fetchError}
+              </div>
+            )}
+
             {error && (
               <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                 {error}

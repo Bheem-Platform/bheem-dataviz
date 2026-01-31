@@ -4,7 +4,7 @@
  * Admin interface for managing users and roles.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Users,
   Plus,
@@ -17,6 +17,7 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
+import { userManagementApi } from '../lib/api';
 
 interface User {
   id: string;
@@ -28,19 +29,31 @@ interface User {
   createdAt: string;
 }
 
-const mockUsers: User[] = [
-  { id: '1', name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'active', lastActive: '2 hours ago', createdAt: '2025-06-15' },
-  { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'Editor', status: 'active', lastActive: '1 day ago', createdAt: '2025-08-20' },
-  { id: '3', name: 'Bob Wilson', email: 'bob@example.com', role: 'Viewer', status: 'inactive', lastActive: '1 week ago', createdAt: '2025-10-05' },
-  { id: '4', name: 'Alice Brown', email: 'alice@example.com', role: 'Editor', status: 'pending', lastActive: 'Never', createdAt: '2026-01-28' },
-];
-
 const roles = ['Admin', 'Editor', 'Viewer'];
 
 export function UserManagement() {
-  const [users] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await userManagementApi.listUsers();
+        setUsers(response.data || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch users');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -59,7 +72,7 @@ export function UserManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -143,7 +156,22 @@ export function UserManagement() {
           </select>
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+
         {/* Users Table */}
+        {!loading && !error && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -210,6 +238,7 @@ export function UserManagement() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </div>
   );

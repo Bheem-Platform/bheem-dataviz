@@ -464,7 +464,7 @@ export class CollaborationWebSocket {
   private room: string;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private heartbeatInterval: NodeJS.Timeout | null = null;
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private handlers: Map<WSMessageType, ((payload: unknown) => void)[]> = new Map();
 
   constructor(url: string, room: string) {

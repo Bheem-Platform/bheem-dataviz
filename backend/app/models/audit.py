@@ -64,8 +64,8 @@ class AuditLog(Base):
     workspace_id = Column(UUID(as_uuid=True), index=True, nullable=True)
     tenant_id = Column(UUID(as_uuid=True), index=True, nullable=True)
 
-    # Additional data
-    extra_data = Column(JSONB, default={})
+    # Additional data (named 'metadata' in database)
+    extra_metadata = Column("metadata", JSONB, default={})
 
     # Error information
     error_message = Column(Text, nullable=True)
@@ -100,7 +100,7 @@ class AuditLogArchive(Base):
     resource_name = Column(String(255), nullable=True)
     workspace_id = Column(UUID(as_uuid=True), index=True, nullable=True)
     success = Column(Integer, default=1)
-    extra_data = Column(JSONB, default={})
+    extra_metadata = Column("metadata", JSONB, default={})
 
     # Archive data
     archived_at = Column(DateTime(timezone=True), default=datetime.utcnow)
@@ -145,8 +145,8 @@ class SecurityAlert(Base):
     resolved_by = Column(UUID(as_uuid=True), nullable=True)
     resolution_notes = Column(Text, nullable=True)
 
-    # Extra data
-    extra_data = Column(JSONB, default={})
+    # Extra data (named 'metadata' in database)
+    extra_metadata = Column("metadata", JSONB, default={})
 
 
 # Action Constants

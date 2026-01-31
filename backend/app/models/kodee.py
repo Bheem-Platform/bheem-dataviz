@@ -138,8 +138,8 @@ class KodeeChatMessage(Base):
     # Error information
     error_message = Column(Text, nullable=True)
 
-    # Extra data
-    extra_data = Column(JSONB, default={})
+    # Extra data (named 'metadata' in database)
+    extra_metadata = Column("metadata", JSONB, default={})
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

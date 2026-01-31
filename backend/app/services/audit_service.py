@@ -718,7 +718,7 @@ class AuditService:
                 status=AlertStatus(a.status),
                 resolved_by=str(a.resolved_by) if a.resolved_by else None,
                 resolution_notes=a.resolution_notes,
-                metadata=a.metadata or {},
+                metadata=a.extra_metadata or {},
             )
             for a in recent_alerts_result.scalars().all()
         ]
@@ -733,6 +733,33 @@ class AuditService:
             top_users=top_users,
             recent_alerts=recent_alerts,
         )
+
+
+    async def detect_anomalies(
+        self,
+        user_id: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+    ) -> list[SecurityAlert]:
+        """Detect anomalies in recent activity (stub implementation)"""
+        # TODO: Implement full anomaly detection
+        return []
+
+    async def archive_old_logs(self, days_to_keep: int = 90) -> int:
+        """Archive logs older than specified days (stub implementation)"""
+        # TODO: Implement log archiving
+        return 0
+
+    async def get_archived_logs(
+        self,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        user_id: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list:
+        """Get archived logs (stub implementation)"""
+        # TODO: Implement archived log retrieval
+        return []
 
 
 def get_audit_service(db: AsyncSession) -> AuditService:

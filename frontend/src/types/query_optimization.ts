@@ -548,7 +548,7 @@ export function getNodeWarnings(node: QueryPlanNode): string[] {
     warnings.push('Sequential scan on large table - consider adding an index');
   }
 
-  if (node.actual_rows !== null && node.estimated_rows > 0) {
+  if (node.actual_rows != null && node.estimated_rows > 0) {
     const ratio = node.actual_rows / node.estimated_rows;
     if (ratio > 10 || ratio < 0.1) {
       warnings.push('Row estimate significantly different from actual - statistics may be stale');

@@ -38,128 +38,7 @@ import {
   isHighSeverity,
   isOpenAlert,
 } from '../types/audit';
-
-// Mock data
-const mockAuditLogs: AuditLog[] = [
-  {
-    id: '1',
-    timestamp: '2026-01-30T10:30:00Z',
-    user_id: 'user-1',
-    user_email: 'john@example.com',
-    user_name: 'John Smith',
-    action: 'dashboard.view',
-    action_category: 'dashboard',
-    action_type: 'view',
-    resource_type: 'dashboard',
-    resource_id: 'dash-1',
-    resource_name: 'Sales Overview',
-    ip_address: '192.168.1.100',
-    request_method: 'GET',
-    request_path: '/api/v1/dashboards/dash-1',
-    response_status: 200,
-    duration_ms: 145,
-    success: 1,
-    metadata: {},
-  },
-  {
-    id: '2',
-    timestamp: '2026-01-30T10:25:00Z',
-    user_id: 'user-2',
-    user_email: 'jane@example.com',
-    user_name: 'Jane Doe',
-    action: 'chart.create',
-    action_category: 'chart',
-    action_type: 'create',
-    resource_type: 'chart',
-    resource_id: 'chart-123',
-    resource_name: 'Revenue by Region',
-    ip_address: '192.168.1.101',
-    request_method: 'POST',
-    request_path: '/api/v1/charts',
-    response_status: 201,
-    duration_ms: 320,
-    success: 1,
-    metadata: {},
-  },
-  {
-    id: '3',
-    timestamp: '2026-01-30T10:20:00Z',
-    user_id: 'user-3',
-    user_email: 'bob@example.com',
-    user_name: 'Bob Wilson',
-    action: 'auth.login_failed',
-    action_category: 'auth',
-    action_type: 'login',
-    ip_address: '203.0.113.50',
-    response_status: 401,
-    duration_ms: 50,
-    success: 0,
-    error_message: 'Invalid credentials',
-    metadata: { attempts: 3 },
-  },
-  {
-    id: '4',
-    timestamp: '2026-01-30T10:15:00Z',
-    user_id: 'user-1',
-    user_email: 'john@example.com',
-    user_name: 'John Smith',
-    action: 'data.export',
-    action_category: 'data',
-    action_type: 'export',
-    resource_type: 'dataset',
-    resource_id: 'ds-1',
-    resource_name: 'Customer Data',
-    ip_address: '192.168.1.100',
-    request_method: 'POST',
-    request_path: '/api/v1/datasets/ds-1/export',
-    response_status: 200,
-    duration_ms: 1250,
-    success: 1,
-    metadata: { format: 'csv', rows: 5000 },
-  },
-];
-
-const mockAlerts: SecurityAlert[] = [
-  {
-    id: 'alert-1',
-    created_at: '2026-01-30T10:20:00Z',
-    alert_type: 'brute_force_attempt',
-    severity: 'high',
-    title: 'Multiple Failed Login Attempts',
-    description: '5 failed login attempts detected from IP 203.0.113.50 within 10 minutes.',
-    user_email: 'bob@example.com',
-    ip_address: '203.0.113.50',
-    related_audit_ids: ['3'],
-    status: 'open',
-    metadata: { attempts: 5, window_minutes: 10 },
-  },
-  {
-    id: 'alert-2',
-    created_at: '2026-01-30T09:00:00Z',
-    alert_type: 'unusual_data_access',
-    severity: 'medium',
-    title: 'Large Data Export',
-    description: 'User exported 50,000+ records in a single request.',
-    user_id: 'user-5',
-    user_email: 'analyst@example.com',
-    status: 'investigating',
-    metadata: { rows_exported: 52000 },
-  },
-  {
-    id: 'alert-3',
-    created_at: '2026-01-29T14:00:00Z',
-    alert_type: 'suspicious_login',
-    severity: 'low',
-    title: 'Login from New Location',
-    description: 'First login detected from Germany for user.',
-    user_email: 'user@example.com',
-    ip_address: '85.214.132.117',
-    status: 'resolved',
-    resolved_at: '2026-01-29T15:00:00Z',
-    resolution_notes: 'Confirmed by user - business travel.',
-    metadata: { country: 'Germany' },
-  },
-];
+import { auditApi } from '../lib/api';
 
 const severityColors: Record<AlertSeverity, { bg: string; text: string; border: string }> = {
   low: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', border: 'border-blue-200' },
@@ -177,8 +56,8 @@ const statusColors: Record<AlertStatus, { bg: string; text: string }> = {
 
 export function AuditLogs() {
   const [activeTab, setActiveTab] = useState<'logs' | 'alerts'>('logs');
-  const [logs, setLogs] = useState<AuditLog[]>(mockAuditLogs);
-  const [alerts, setAlerts] = useState<SecurityAlert[]>(mockAlerts);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [alerts, setAlerts] = useState<SecurityAlert[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
@@ -186,6 +65,31 @@ export function AuditLogs() {
   const [dateRange, setDateRange] = useState<string>('today');
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch audit logs and alerts from API
+  const fetchData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [logsResponse, alertsResponse] = await Promise.all([
+        auditApi.getLogs({ limit: 100 }),
+        auditApi.getAlerts({ limit: 50 }),
+      ]);
+      setLogs(logsResponse.data || []);
+      setAlerts(alertsResponse.data || []);
+    } catch (err) {
+      console.error('Error fetching audit data:', err);
+      setError('Failed to load audit data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load data on mount
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   // Summary stats
   const stats = {
@@ -212,25 +116,43 @@ export function AuditLogs() {
   });
 
   const handleRefresh = async () => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
+    await fetchData();
   };
 
-  const handleExport = () => {
-    console.log('Exporting audit logs...');
+  const handleExport = async () => {
+    try {
+      const response = await auditApi.exportLogs({
+        format: 'json',
+        max_records: 1000,
+      });
+      const dataStr = JSON.stringify(response.data, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'audit-logs.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error exporting audit logs:', err);
+    }
   };
 
-  const handleResolveAlert = (alertId: string, notes: string) => {
-    setAlerts(alerts.map(a =>
-      a.id === alertId
-        ? { ...a, status: 'resolved' as AlertStatus, resolved_at: new Date().toISOString(), resolution_notes: notes }
-        : a
-    ));
+  const handleResolveAlert = async (alertId: string, notes: string) => {
+    try {
+      await auditApi.resolveAlert(alertId, notes);
+      setAlerts(alerts.map(a =>
+        a.id === alertId
+          ? { ...a, status: 'resolved' as AlertStatus, resolved_at: new Date().toISOString(), resolution_notes: notes }
+          : a
+      ));
+    } catch (err) {
+      console.error('Error resolving alert:', err);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -402,6 +324,16 @@ export function AuditLogs() {
           </div>
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+              <XCircle className="w-5 h-5" />
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
+
         {/* Content */}
         {activeTab === 'logs' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -496,6 +428,17 @@ export function AuditLogs() {
                 ))}
               </tbody>
             </table>
+            {filteredLogs.length === 0 && (
+              <div className="text-center py-12">
+                <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  No logs found
+                </h3>
+                <p className="mt-1 text-gray-500 dark:text-gray-400">
+                  No activity logs match your current filters.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

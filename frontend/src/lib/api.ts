@@ -140,9 +140,9 @@ export const dashboardsApi = {
 
 // Datasets API
 export const datasetsApi = {
-  list: () => api.get('/datasets'),
+  list: () => api.get('/datasets/'),
   get: (id: string) => api.get(`/datasets/${id}`),
-  create: (data: any) => api.post('/datasets', data),
+  create: (data: any) => api.post('/datasets/', data),
   update: (id: string, data: any) => api.put(`/datasets/${id}`, data),
   delete: (id: string) => api.delete(`/datasets/${id}`),
   preview: (id: string, params?: any) => api.get(`/datasets/${id}/preview`, { params }),
@@ -5680,6 +5680,21 @@ export const workflowsApi = {
   getAnalytics: (days?: number) => bheemFlowApi.get('/analytics/overview', {
     params: { module: MODULE, workspace_id: getWorkspaceId(), days: days || 7 }
   }),
+}
+
+// Data Profiler API
+export const profilerApi = {
+  // Get list of connections that support profiling
+  getConnections: () => api.get('/profiler/connections'),
+
+  // Get list of tables for a connection
+  getTables: (connectionId: string) => api.get(`/profiler/connections/${connectionId}/tables`),
+
+  // Profile a specific table
+  profileTable: (connectionId: string, schema: string, table: string, sampleSize?: number) =>
+    api.get(`/profiler/profile/${connectionId}/${schema}/${table}`, {
+      params: { sample_size: sampleSize || 10000 }
+    }),
 }
 
 // Default export for backward compatibility

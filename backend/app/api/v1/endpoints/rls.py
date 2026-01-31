@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime
 
 from app.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, CurrentUser
 from app.schemas.rls import (
     SecurityRole,
     RLSPolicy,
@@ -43,7 +43,7 @@ _config = RLSConfiguration()
 
 @router.get("/roles", response_model=list[SecurityRole])
 async def list_roles(
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """List all security roles"""
     return list(_roles.values())
@@ -52,7 +52,7 @@ async def list_roles(
 @router.post("/roles", response_model=SecurityRole)
 async def create_role(
     role: SecurityRole,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Create a new security role"""
     if not role.id:
@@ -68,7 +68,7 @@ async def create_role(
 @router.get("/roles/{role_id}", response_model=SecurityRole)
 async def get_role(
     role_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Get a specific role"""
     if role_id not in _roles:
@@ -80,7 +80,7 @@ async def get_role(
 async def update_role(
     role_id: str,
     role: SecurityRole,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Update a role"""
     if role_id not in _roles:
@@ -97,7 +97,7 @@ async def update_role(
 @router.delete("/roles/{role_id}")
 async def delete_role(
     role_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Delete a role"""
     if role_id not in _roles:
@@ -114,7 +114,7 @@ async def list_policies(
     table_name: str = None,
     schema_name: str = None,
     connection_id: str = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """List RLS policies with optional filtering"""
     policies = list(_policies.values())
@@ -132,7 +132,7 @@ async def list_policies(
 @router.post("/policies", response_model=RLSPolicy)
 async def create_policy(
     policy: RLSPolicy,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Create a new RLS policy"""
     if not policy.id:
@@ -140,7 +140,7 @@ async def create_policy(
 
     policy.created_at = datetime.utcnow().isoformat()
     policy.updated_at = policy.created_at
-    policy.created_by = current_user.get("user_id")
+    policy.created_by = current_user.id
 
     _policies[policy.id] = policy
     return policy
@@ -149,7 +149,7 @@ async def create_policy(
 @router.get("/policies/{policy_id}", response_model=RLSPolicy)
 async def get_policy(
     policy_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Get a specific policy"""
     if policy_id not in _policies:
@@ -161,7 +161,7 @@ async def get_policy(
 async def update_policy(
     policy_id: str,
     policy: RLSPolicy,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Update a policy"""
     if policy_id not in _policies:
@@ -179,7 +179,7 @@ async def update_policy(
 @router.delete("/policies/{policy_id}")
 async def delete_policy(
     policy_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Delete a policy"""
     if policy_id not in _policies:
@@ -193,7 +193,7 @@ async def delete_policy(
 async def toggle_policy(
     policy_id: str,
     enabled: bool,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Enable or disable a policy"""
     if policy_id not in _policies:
@@ -210,7 +210,7 @@ async def toggle_policy(
 @router.get("/user-roles/{user_id}", response_model=UserRoleMapping)
 async def get_user_roles(
     user_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Get role assignments for a user"""
     if user_id not in _user_role_mappings:
@@ -222,7 +222,7 @@ async def get_user_roles(
 async def set_user_roles(
     user_id: str,
     mapping: UserRoleMapping,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Set role assignments for a user"""
     mapping.user_id = user_id
@@ -236,14 +236,14 @@ async def set_user_roles(
 async def get_object_permissions(
     object_type: str,
     object_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Get permissions for an object"""
     key = f"{object_type}:{object_id}"
     permissions = _object_permissions.get(key, [])
 
     # Determine effective permission for current user
-    user_id = current_user.get("user_id")
+    user_id = current_user.id
     user_roles = current_user.get("roles", [])
 
     effective = PermissionLevel.NONE
@@ -272,7 +272,7 @@ async def set_object_permissions(
     object_type: str,
     object_id: str,
     permissions: list[ObjectPermission],
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Set permissions for an object"""
     key = f"{object_type}:{object_id}"
@@ -285,7 +285,7 @@ async def set_object_permissions(
 @router.post("/evaluate", response_model=RLSFilterResponse)
 async def evaluate_rls(
     request: RLSFilterRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Evaluate RLS policies and return filters to apply.
@@ -305,7 +305,7 @@ async def test_rls_policy(
     table_name: str,
     schema_name: str = "public",
     connection_id: str = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Test an RLS policy with a simulated user context.
@@ -335,7 +335,7 @@ async def test_rls_policy(
 
 @router.get("/config", response_model=RLSConfiguration)
 async def get_rls_config(
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Get RLS configuration"""
     return _config
@@ -344,7 +344,7 @@ async def get_rls_config(
 @router.put("/config", response_model=RLSConfiguration)
 async def update_rls_config(
     config: RLSConfiguration,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Update RLS configuration"""
     global _config
@@ -356,7 +356,7 @@ async def update_rls_config(
 
 @router.get("/templates")
 async def get_policy_templates(
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Get pre-built policy templates"""
     return RLS_POLICY_TEMPLATES
@@ -369,7 +369,7 @@ async def apply_template(
     schema_name: str = "public",
     connection_id: str = None,
     role_ids: list[str] = [],
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Apply a policy template to create a new policy"""
     template = next((t for t in RLS_POLICY_TEMPLATES if t["id"] == template_id), None)
@@ -389,7 +389,7 @@ async def apply_template(
         role_ids=role_ids,
         created_at=datetime.utcnow().isoformat(),
         updated_at=datetime.utcnow().isoformat(),
-        created_by=current_user.get("user_id"),
+        created_by=current_user.id,
     )
 
     _policies[policy.id] = policy

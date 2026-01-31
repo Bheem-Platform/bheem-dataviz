@@ -19,6 +19,7 @@ import {
   PieChart,
   Activity,
 } from 'lucide-react'
+import { api } from '../lib/api'
 
 // Dashboard cover patterns
 const dashboardCovers = [
@@ -147,8 +148,6 @@ const getDashboardCover = (index: number) => {
   return dashboardCovers[coverIndex](index)
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-
 interface Dashboard {
   id: string
   name: string
@@ -198,11 +197,8 @@ export function DashboardList() {
   const fetchDashboards = async () => {
     try {
       setLoadingDashboards(true)
-      const response = await fetch(`${API_BASE}/api/v1/dashboards/`)
-      if (response.ok) {
-        const data = await response.json()
-        setDashboards(data)
-      }
+      const response = await api.get('/dashboards/')
+      setDashboards(response.data)
     } catch (error) {
       console.error('Failed to fetch dashboards:', error)
     } finally {
@@ -213,11 +209,8 @@ export function DashboardList() {
   const fetchTransforms = async () => {
     try {
       setLoadingTransforms(true)
-      const response = await fetch(`${API_BASE}/api/v1/transforms/`)
-      if (response.ok) {
-        const data = await response.json()
-        setTransforms(data)
-      }
+      const response = await api.get('/transforms/')
+      setTransforms(response.data)
     } catch (error) {
       console.error('Failed to fetch transforms:', error)
     } finally {
@@ -229,12 +222,8 @@ export function DashboardList() {
     if (!confirm('Are you sure you want to delete this transform recipe?')) return
 
     try {
-      const response = await fetch(`${API_BASE}/api/v1/transforms/${id}`, {
-        method: 'DELETE',
-      })
-      if (response.ok) {
-        fetchTransforms()
-      }
+      await api.delete(`/transforms/${id}`)
+      fetchTransforms()
     } catch (error) {
       console.error('Failed to delete transform:', error)
     }
@@ -244,12 +233,8 @@ export function DashboardList() {
     if (!confirm('Are you sure you want to delete this dashboard?')) return
 
     try {
-      const response = await fetch(`${API_BASE}/api/v1/dashboards/${id}`, {
-        method: 'DELETE',
-      })
-      if (response.ok) {
-        fetchDashboards()
-      }
+      await api.delete(`/dashboards/${id}`)
+      fetchDashboards()
     } catch (error) {
       console.error('Failed to delete dashboard:', error)
     }

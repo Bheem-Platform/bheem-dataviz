@@ -4,7 +4,7 @@
  * Manage embed tokens for dashboards and charts.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Code,
   Plus,
@@ -25,61 +25,35 @@ import {
   EmbedResourceType,
   EmbedTheme,
 } from '../types/embed';
-
-// Mock data
-const mockTokens: EmbedToken[] = [
-  {
-    id: '1',
-    name: 'Sales Dashboard - Public',
-    description: 'Public embed for company website',
-    created_by: 'user-1',
-    resource_type: 'dashboard',
-    resource_id: 'dash-1',
-    allow_interactions: true,
-    allow_export: false,
-    allow_fullscreen: true,
-    allow_comments: false,
-    theme: 'light',
-    show_header: true,
-    show_toolbar: false,
-    allowed_domains: ['example.com', 'www.example.com'],
-    view_count: 1250,
-    is_active: true,
-    created_at: '2025-12-01T00:00:00Z',
-    last_used_at: '2026-01-30T09:00:00Z',
-    settings: {},
-  },
-  {
-    id: '2',
-    name: 'Revenue Chart - Partner Portal',
-    description: 'Embedded chart for partner dashboard',
-    created_by: 'user-1',
-    resource_type: 'chart',
-    resource_id: 'chart-1',
-    allow_interactions: false,
-    allow_export: false,
-    allow_fullscreen: false,
-    allow_comments: false,
-    theme: 'dark',
-    show_header: false,
-    show_toolbar: false,
-    allowed_domains: ['partners.example.com'],
-    expires_at: '2026-06-30T00:00:00Z',
-    view_count: 450,
-    is_active: true,
-    created_at: '2026-01-15T00:00:00Z',
-    last_used_at: '2026-01-29T14:00:00Z',
-    settings: {},
-  },
-];
+import { embedApi } from '../lib/api';
 
 export function EmbedManager() {
-  const [tokens, setTokens] = useState<EmbedToken[]>(mockTokens);
+  const [tokens, setTokens] = useState<EmbedToken[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedToken, setSelectedToken] = useState<EmbedToken | null>(null);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTokens = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await embedApi.listTokens();
+        setTokens(response.data || []);
+      } catch (err) {
+        console.error('Failed to fetch embed tokens:', err);
+        setError('Failed to load embed tokens. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTokens();
+  }, []);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -184,7 +158,7 @@ export function EmbedManager() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -248,8 +222,29 @@ export function EmbedManager() {
           />
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-red-700 dark:text-red-400">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 text-sm text-red-600 dark:text-red-300 hover:underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-blue-600"></div>
+            <p className="mt-4 text-gray-500 dark:text-gray-400">Loading embed tokens...</p>
+          </div>
+        )}
+
         {/* Tokens Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {!loading && !error && <><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTokens.map((token) => (
             <div
               key={token.id}
@@ -390,6 +385,7 @@ export function EmbedManager() {
             </p>
           </div>
         )}
+        </>}
       </div>
 
       {/* Create Modal */}

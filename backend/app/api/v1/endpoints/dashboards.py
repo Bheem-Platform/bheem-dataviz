@@ -11,14 +11,13 @@ from datetime import datetime
 from app.database import get_db
 from app.models.dashboard import Dashboard as DashboardModel, SavedChart as SavedChartModel, SuggestedQuestion as SuggestedQuestionModel
 from app.models.transform import TransformRecipe as TransformRecipeModel
-from app.models.user import User
 from app.schemas.dashboard import (
     Dashboard, DashboardCreate, DashboardUpdate, DashboardSummary,
     SavedChart, SavedChartCreate, SavedChartUpdate,
     SuggestedQuestion, SuggestedQuestionCreate,
     HomePageData, TransformRecipeSummary
 )
-from app.core.security import get_current_user
+from app.core.security import get_current_user, CurrentUser
 
 router = APIRouter()
 
@@ -28,7 +27,7 @@ router = APIRouter()
 @router.get("/home", response_model=HomePageData)
 async def get_home_page_data(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Get data for the home page dashboard grid."""
 
@@ -126,7 +125,7 @@ async def get_home_page_data(
 @router.get("/", response_model=List[DashboardSummary])
 async def list_dashboards(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """List all dashboards with chart counts."""
     result = await db.execute(
@@ -160,7 +159,7 @@ async def list_dashboards(
 async def create_dashboard(
     dashboard: DashboardCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Create a new dashboard."""
     db_dashboard = DashboardModel(**dashboard.model_dump())
@@ -181,7 +180,7 @@ async def create_dashboard(
 async def get_dashboard(
     dashboard_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Get a dashboard with all its charts."""
     result = await db.execute(
@@ -202,7 +201,7 @@ async def update_dashboard(
     dashboard_id: UUID,
     dashboard_update: DashboardUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Update a dashboard."""
     result = await db.execute(
@@ -232,7 +231,7 @@ async def update_dashboard(
 async def delete_dashboard(
     dashboard_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Delete a dashboard and all its charts."""
     result = await db.execute(
@@ -255,7 +254,7 @@ async def list_all_charts(
     limit: int = 50,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """List all saved charts."""
     result = await db.execute(
@@ -271,7 +270,7 @@ async def list_all_charts(
 async def create_chart(
     chart: SavedChartCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Save a new chart."""
     db_chart = SavedChartModel(**chart.model_dump())
@@ -285,7 +284,7 @@ async def create_chart(
 async def get_chart(
     chart_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Get a saved chart."""
     result = await db.execute(
@@ -309,7 +308,7 @@ async def update_chart(
     chart_id: UUID,
     chart_update: SavedChartUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Update a saved chart."""
     result = await db.execute(
@@ -333,7 +332,7 @@ async def update_chart(
 async def delete_chart(
     chart_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Delete a saved chart."""
     result = await db.execute(
@@ -353,7 +352,7 @@ async def delete_chart(
 async def toggle_favorite(
     chart_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Toggle favorite status of a chart."""
     result = await db.execute(
@@ -375,7 +374,7 @@ async def toggle_favorite(
 @router.get("/questions", response_model=List[SuggestedQuestion])
 async def list_suggested_questions(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """List all suggested questions."""
     result = await db.execute(
@@ -390,7 +389,7 @@ async def list_suggested_questions(
 async def create_suggested_question(
     question: SuggestedQuestionCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Create a new suggested question."""
     db_question = SuggestedQuestionModel(**question.model_dump())
@@ -404,7 +403,7 @@ async def create_suggested_question(
 async def delete_suggested_question(
     question_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Delete a suggested question."""
     result = await db.execute(

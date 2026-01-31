@@ -20,6 +20,7 @@ from app.services.mysql_service import MySQLService
 from app.services.encryption_service import encryption_service
 from app.services.transform_service import get_transform_service
 from pydantic import BaseModel, Field
+import uuid as uuid_module
 
 
 router = APIRouter()
@@ -268,9 +269,14 @@ async def calculate_kpi(
     """
     start_time = time.time()
 
-    # Get connection
+    # Get connection - convert string to UUID
+    try:
+        conn_uuid = uuid_module.UUID(request.connection_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid connection ID format")
+
     conn_result = await db.execute(
-        select(ConnectionModel).where(ConnectionModel.id == request.connection_id)
+        select(ConnectionModel).where(ConnectionModel.id == conn_uuid)
     )
     conn = conn_result.scalar_one_or_none()
 
@@ -285,9 +291,14 @@ async def calculate_kpi(
     use_cte = False
 
     if request.transform_id:
-        # Use transform as source
+        # Use transform as source - convert string to UUID
+        try:
+            transform_uuid = uuid_module.UUID(request.transform_id)
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid transform ID format")
+
         transform_result = await db.execute(
-            select(TransformRecipe).where(TransformRecipe.id == request.transform_id)
+            select(TransformRecipe).where(TransformRecipe.id == transform_uuid)
         )
         transform = transform_result.scalar_one_or_none()
 
@@ -303,11 +314,16 @@ async def calculate_kpi(
         use_cte = True
 
     elif request.semantic_model_id:
-        # Use semantic model's source
+        # Use semantic model's source - convert string to UUID
+        try:
+            model_uuid = uuid_module.UUID(request.semantic_model_id)
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid semantic model ID format")
+
         model_result = await db.execute(
             select(SemanticModel)
             .options(selectinload(SemanticModel.transform))
-            .where(SemanticModel.id == request.semantic_model_id)
+            .where(SemanticModel.id == model_uuid)
         )
         model = model_result.scalar_one_or_none()
 

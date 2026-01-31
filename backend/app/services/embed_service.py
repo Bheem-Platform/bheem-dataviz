@@ -416,13 +416,13 @@ class EmbedService:
 
         # Store event in metadata
         if event_data:
-            events = session.metadata.get("events", [])
+            events = session.extra_metadata.get("events", [])
             events.append({
                 "type": event_type,
                 "data": event_data,
                 "timestamp": datetime.utcnow().isoformat(),
             })
-            session.metadata["events"] = events[-100]  # Keep last 100 events
+            session.extra_metadata["events"] = events[-100]  # Keep last 100 events
 
         await self.db.commit()
         return True

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { GripVertical, Settings, Trash2, Maximize2, MoreHorizontal, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
 import ReactECharts from 'echarts-for-react'
 import { KPICard, KPIConfig } from './KPICard'
+import { api } from '../../lib/api'
 
 // Use relative URL to go through Vite proxy in dev, or direct in production
 const API_BASE_URL = '/api/v1'
@@ -170,24 +171,15 @@ export function ChartWidget({ widget, isPreview, onEdit, onDelete }: ChartWidget
     setError(null)
 
     try {
-      let response: Response
-
       if (widget.chartId) {
         // Fetch from saved chart
-        response = await fetch(`${API_BASE_URL}/charts/${widget.chartId}/render`)
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.detail || 'Failed to load chart')
-        }
-        setChartData(await response.json())
+        const response = await api.get(`/charts/${widget.chartId}/render`)
+        setChartData(response.data)
 
       } else if (widget.semanticModelId) {
         // First get the model to find measures and dimensions
-        const modelResponse = await fetch(`${API_BASE_URL}/models/${widget.semanticModelId}`)
-        if (!modelResponse.ok) {
-          throw new Error('Failed to load model')
-        }
-        const model = await modelResponse.json()
+        const modelResponse = await api.get(`/models/${widget.semanticModelId}`)
+        const model = modelResponse.data
 
         // Get all measure and dimension IDs
         const measureIds = (model.measures || []).map((m: any) => m.id)
@@ -198,22 +190,13 @@ export function ChartWidget({ widget, isPreview, onEdit, onDelete }: ChartWidget
         }
 
         // Now call preview with all measures and dimensions
-        response = await fetch(`${API_BASE_URL}/models/${widget.semanticModelId}/preview`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            measure_ids: measureIds,
-            dimension_ids: dimensionIds,
-            limit: 100
-          })
+        const response = await api.post(`/models/${widget.semanticModelId}/preview`, {
+          measure_ids: measureIds,
+          dimension_ids: dimensionIds,
+          limit: 100
         })
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.detail || 'Failed to load model data')
-        }
-
-        const data = await response.json()
+        const data = response.data
         const rows = data.rows || []
         const columns = data.columns || (rows.length > 0 ? Object.keys(rows[0]) : [])
         setChartData({
@@ -226,16 +209,8 @@ export function ChartWidget({ widget, isPreview, onEdit, onDelete }: ChartWidget
 
       } else if (widget.transformId) {
         // Fetch from transform execute - limit is a query param
-        response = await fetch(`${API_BASE_URL}/transforms/${widget.transformId}/execute?limit=100`, {
-          method: 'POST',
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.detail || 'Failed to load transform data')
-        }
-
-        const data = await response.json()
+        const response = await api.post(`/transforms/${widget.transformId}/execute?limit=100`)
+        const data = response.data
         // Transform columns array [{name, type}] to string array
         const columns = (data.columns || []).map((c: any) => typeof c === 'string' ? c : c.name)
         const rows = data.data || data.rows || []
@@ -249,8 +224,8 @@ export function ChartWidget({ widget, isPreview, onEdit, onDelete }: ChartWidget
       } else {
         return
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data')
+    } catch (err: any) {
+      setError(err.response?.data?.detail || err.message || 'Failed to load data')
     } finally {
       setLoading(false)
     }

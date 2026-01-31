@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { scheduleApi } from '../lib/api';
 import {
   RefreshSchedule,
   AlertRule,
@@ -22,71 +23,39 @@ import {
   formatScheduleFrequency,
 } from '../types/schedule';
 
-// Mock API functions - replace with actual API calls
-const mockSchedules: RefreshSchedule[] = [
-  {
-    id: '1',
-    name: 'Daily Sales Refresh',
-    description: 'Refresh sales data every morning',
-    enabled: true,
-    status: 'active',
-    targetType: 'connection',
-    targetId: 'conn-1',
-    refreshType: 'full',
-    schedule: {
-      frequency: 'daily',
-      time: { hour: 6, minute: 0, timezone: 'UTC' },
-      maxRetries: 3,
-      retryDelayMinutes: 5,
-    },
-    notifyOnSuccess: false,
-    notifyOnFailure: true,
-    notificationRecipients: ['admin@example.com'],
-    lastRunAt: '2026-01-30T06:00:00Z',
-    lastRunStatus: 'success',
-    nextRunAt: '2026-01-31T06:00:00Z',
-  },
-];
-
-const mockAlerts: AlertRule[] = [
-  {
-    id: '1',
-    name: 'Low Sales Alert',
-    description: 'Alert when daily sales fall below threshold',
-    enabled: true,
-    severity: 'warning',
-    targetType: 'dashboard',
-    targetId: 'dash-1',
-    conditions: [
-      {
-        id: 'cond-1',
-        measure: 'total_sales',
-        operator: 'less_than',
-        threshold: 10000,
-      },
-    ],
-    conditionLogic: 'AND',
-    evaluationSchedule: {
-      frequency: 'hourly',
-      maxRetries: 3,
-      retryDelayMinutes: 5,
-    },
-    notificationChannels: ['email', 'in_app'],
-    notificationRecipients: ['sales@example.com'],
-    minIntervalMinutes: 60,
-    triggerCount: 3,
-    lastTriggeredAt: '2026-01-29T14:00:00Z',
-  },
-];
-
 export function ScheduledRefresh() {
   const [activeTab, setActiveTab] = useState<'schedules' | 'alerts' | 'history'>('schedules');
-  const [schedules, setSchedules] = useState<RefreshSchedule[]>(mockSchedules);
-  const [alerts, setAlerts] = useState<AlertRule[]>(mockAlerts);
+  const [schedules, setSchedules] = useState<RefreshSchedule[]>([]);
+  const [alerts, setAlerts] = useState<AlertRule[]>([]);
   const [executions, setExecutions] = useState<ScheduleExecution[]>([]);
   const [alertExecutions, setAlertExecutions] = useState<AlertExecution[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch schedules and alerts from API
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [schedulesResponse, alertsResponse] = await Promise.all([
+          scheduleApi.listSchedules(),
+          scheduleApi.listAlerts(),
+        ]);
+        setSchedules(schedulesResponse.data || []);
+        setAlerts(alertsResponse.data || []);
+      } catch (err) {
+        console.error('Failed to fetch schedules/alerts:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load schedules and alerts');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Editor modal state
   const [showScheduleEditor, setShowScheduleEditor] = useState(false);
@@ -211,7 +180,7 @@ export function ScheduledRefresh() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -343,8 +312,28 @@ export function ScheduledRefresh() {
           </select>
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-600 dark:text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-red-800 dark:text-red-200">{error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading...</span>
+          </div>
+        )}
+
         {/* Schedules Tab */}
-        {activeTab === 'schedules' && (
+        {!loading && activeTab === 'schedules' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
@@ -478,7 +467,7 @@ export function ScheduledRefresh() {
         )}
 
         {/* Alerts Tab */}
-        {activeTab === 'alerts' && (
+        {!loading && activeTab === 'alerts' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
@@ -609,7 +598,7 @@ export function ScheduledRefresh() {
         )}
 
         {/* History Tab */}
-        {activeTab === 'history' && (
+        {!loading && activeTab === 'history' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <div className="text-center text-gray-500 dark:text-gray-400 py-12">
               Execution history will appear here once schedules and alerts have been run.

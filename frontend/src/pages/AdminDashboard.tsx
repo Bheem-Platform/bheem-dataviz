@@ -4,7 +4,7 @@
  * System administration and monitoring dashboard.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Users,
   Database,
@@ -17,6 +17,7 @@ import {
   HardDrive,
   Cpu,
 } from 'lucide-react';
+import { adminDashboardApi } from '../lib/api';
 
 interface SystemStats {
   activeUsers: number;
@@ -39,32 +40,51 @@ interface RecentActivity {
   timestamp: string;
 }
 
-const mockStats: SystemStats = {
-  activeUsers: 45,
-  totalUsers: 250,
-  totalDashboards: 128,
-  totalQueries: 15420,
-  avgResponseTime: 245,
-  uptime: '99.9%',
-  cpuUsage: 34,
-  memoryUsage: 68,
-  diskUsage: 52,
-  activeConnections: 12,
+const defaultStats: SystemStats = {
+  activeUsers: 0,
+  totalUsers: 0,
+  totalDashboards: 0,
+  totalQueries: 0,
+  avgResponseTime: 0,
+  uptime: '0%',
+  cpuUsage: 0,
+  memoryUsage: 0,
+  diskUsage: 0,
+  activeConnections: 0,
 };
 
-const mockActivities: RecentActivity[] = [
-  { id: '1', user: 'john@example.com', action: 'Created dashboard', resource: 'Sales Q4 Report', timestamp: '2 minutes ago' },
-  { id: '2', user: 'jane@example.com', action: 'Updated connection', resource: 'PostgreSQL Prod', timestamp: '5 minutes ago' },
-  { id: '3', user: 'admin@example.com', action: 'Added user', resource: 'new.user@example.com', timestamp: '10 minutes ago' },
-  { id: '4', user: 'john@example.com', action: 'Executed query', resource: 'Monthly Revenue', timestamp: '15 minutes ago' },
-];
-
 export function AdminDashboard() {
-  const [stats] = useState<SystemStats>(mockStats);
-  const [activities] = useState<RecentActivity[]>(mockActivities);
+  const [stats, setStats] = useState<SystemStats>(defaultStats);
+  const [activities, setActivities] = useState<RecentActivity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await adminDashboardApi.getDashboardSummary();
+        if (response.data) {
+          if (response.data.stats) {
+            setStats(response.data.stats);
+          }
+          if (response.data.activities) {
+            setActivities(response.data.activities);
+          }
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -78,6 +98,24 @@ export function AdminDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              <span className="text-red-700 dark:text-red-400">{error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="mb-6 flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <span className="ml-3 text-gray-500 dark:text-gray-400">Loading dashboard data...</span>
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">

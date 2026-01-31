@@ -4,7 +4,7 @@
  * Customize appearance and branding.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Palette,
   Sun,
@@ -14,7 +14,9 @@ import {
   Image,
   Save,
   RotateCcw,
+  AlertCircle,
 } from 'lucide-react';
+import { themingApi } from '../lib/api';
 
 interface ThemeSettings {
   colorMode: 'light' | 'dark' | 'auto';
@@ -23,6 +25,12 @@ interface ThemeSettings {
   fontFamily: string;
   borderRadius: number;
   logoUrl: string;
+}
+
+interface ColorPreset {
+  name: string;
+  primary: string;
+  accent: string;
 }
 
 const defaultTheme: ThemeSettings = {
@@ -34,37 +42,122 @@ const defaultTheme: ThemeSettings = {
   logoUrl: '',
 };
 
-const colorPresets = [
-  { name: 'Blue', primary: '#3B82F6', accent: '#6366F1' },
-  { name: 'Green', primary: '#10B981', accent: '#14B8A6' },
-  { name: 'Purple', primary: '#8B5CF6', accent: '#A855F7' },
-  { name: 'Rose', primary: '#F43F5E', accent: '#EC4899' },
-  { name: 'Orange', primary: '#F97316', accent: '#EAB308' },
-];
-
-const fonts = ['Inter', 'Roboto', 'Open Sans', 'Lato', 'Poppins'];
-
 export function Theming() {
   const [theme, setTheme] = useState<ThemeSettings>(defaultTheme);
   const [hasChanges, setHasChanges] = useState(false);
+  const [colorPresets, setColorPresets] = useState<ColorPreset[]>([]);
+  const [fonts, setFonts] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchThemingData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [presetsResponse, themesResponse] = await Promise.all([
+          themingApi.getPresets(),
+          themingApi.listThemes({ include_system: true }),
+        ]);
+
+        // Extract color presets from the API response
+        if (presetsResponse.data?.presets) {
+          const presets = presetsResponse.data.presets.map((preset: { name: string; colors?: { primary?: string; accent?: string } }) => ({
+            name: preset.name,
+            primary: preset.colors?.primary || '#3B82F6',
+            accent: preset.colors?.accent || '#6366F1',
+          }));
+          setColorPresets(presets);
+        }
+
+        // Extract fonts from themes or use defaults
+        if (themesResponse.data?.themes) {
+          const extractedFonts = new Set<string>();
+          themesResponse.data.themes.forEach((t: { typography?: { fontFamily?: string } }) => {
+            if (t.typography?.fontFamily) {
+              extractedFonts.add(t.typography.fontFamily);
+            }
+          });
+          if (extractedFonts.size > 0) {
+            setFonts(Array.from(extractedFonts));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch theming data:', err);
+        setError('Failed to load theming data. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchThemingData();
+  }, []);
 
   const updateTheme = (updates: Partial<ThemeSettings>) => {
     setTheme({ ...theme, ...updates });
     setHasChanges(true);
   };
 
-  const handleSave = () => {
-    setHasChanges(false);
-    // Save theme settings
+  const handleSave = async () => {
+    try {
+      setError(null);
+      await themingApi.createTheme({
+        name: 'Custom Theme',
+        mode: theme.colorMode,
+        colors: {
+          primary: theme.primaryColor,
+          accent: theme.accentColor,
+        },
+        typography: {
+          fontFamily: theme.fontFamily,
+        },
+        border_radius: {
+          default: theme.borderRadius,
+        },
+      });
+      setHasChanges(false);
+    } catch (err) {
+      console.error('Failed to save theme:', err);
+      setError('Failed to save theme. Please try again.');
+    }
   };
 
   const handleReset = () => {
     setTheme(defaultTheme);
     setHasChanges(false);
+    setError(null);
   };
 
+  if (loading) {
+    return (
+      <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading theming data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+            <p className="text-red-700 dark:text-red-400">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="ml-auto text-red-500 hover:text-red-700"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

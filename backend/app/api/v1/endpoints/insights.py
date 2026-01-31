@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, CurrentUser
 from app.schemas.insights import (
     InsightType,
     InsightsRequest,
@@ -41,7 +41,7 @@ async def analyze_data(
     measure_columns: list[str] = Body(None, description="Numeric columns"),
     dimension_columns: list[str] = Body(None, description="Categorical columns"),
     insight_types: list[InsightType] = Body(None, description="Types of insights to generate"),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Analyze data and generate insights.
@@ -63,7 +63,7 @@ async def analyze_data(
 @router.post("/analyze/chart/{chart_id}", response_model=InsightsResponse)
 async def analyze_chart_data(
     chart_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """
@@ -91,7 +91,7 @@ async def analyze_chart_data(
 async def analyze_dataset(
     dataset_id: str,
     limit_rows: int = Query(10000, le=100000),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """
@@ -120,7 +120,7 @@ async def detect_trends(
     data: list[dict[str, Any]] = Body(...),
     date_column: str = Body(..., description="Column containing dates"),
     value_columns: list[str] = Body(..., description="Numeric columns to analyze"),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Detect trends in time series data.
@@ -145,7 +145,7 @@ async def detect_outliers(
     columns: list[str] = Body(..., description="Columns to check for outliers"),
     method: str = Body("iqr", description="Detection method: iqr, zscore"),
     threshold: float = Body(1.5, description="Threshold for detection"),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Detect outliers in numeric columns.
@@ -167,7 +167,7 @@ async def analyze_correlations(
     data: list[dict[str, Any]] = Body(...),
     columns: list[str] = Body(..., description="Columns to analyze (min 2)"),
     min_correlation: float = Body(0.5, ge=0, le=1, description="Minimum correlation to report"),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Analyze correlations between numeric columns.
@@ -191,7 +191,7 @@ async def analyze_correlations(
 async def analyze_distribution(
     data: list[dict[str, Any]] = Body(...),
     columns: list[str] = Body(..., description="Columns to analyze"),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Analyze the distribution of numeric columns.
@@ -212,7 +212,7 @@ async def analyze_distribution(
 async def profile_data(
     data: list[dict[str, Any]] = Body(...),
     columns: list[str] = Body(None, description="Columns to profile"),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Generate a data profile.
@@ -236,7 +236,7 @@ async def identify_performers(
     data: list[dict[str, Any]] = Body(...),
     measure: str = Body(..., description="Measure column"),
     dimension: str = Body(..., description="Dimension to group by"),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Identify top and bottom performers.
@@ -259,7 +259,7 @@ async def compare_groups(
     data: list[dict[str, Any]] = Body(...),
     measures: list[str] = Body(..., description="Measure columns"),
     dimensions: list[str] = Body(..., description="Dimension columns"),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Compare measures across dimension values.
@@ -279,7 +279,7 @@ async def compare_groups(
 
 @router.get("/templates")
 async def get_insight_templates(
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Get insight message templates"""
     return {
@@ -290,7 +290,7 @@ async def get_insight_templates(
 
 @router.get("/types")
 async def get_insight_types(
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Get available insight types"""
     return {
@@ -324,7 +324,7 @@ async def get_insight_types(
 async def get_dashboard_quick_insights(
     dashboard_id: str,
     max_insights: int = Query(5, le=20),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """
@@ -357,7 +357,7 @@ async def schedule_insight_analysis(
     frequency: str = Body("daily", description="Analysis frequency"),
     insight_types: list[InsightType] = Body(None),
     notify_on_high: bool = Body(True),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """
@@ -372,7 +372,7 @@ async def schedule_insight_analysis(
         "frequency": frequency,
         "insight_types": [t.value for t in insight_types] if insight_types else None,
         "notify_on_high": notify_on_high,
-        "created_by": current_user.get("user_id"),
+        "created_by": current_user.id,
         "created_at": __import__("datetime").datetime.utcnow(),
         "enabled": True,
     }

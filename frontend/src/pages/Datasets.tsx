@@ -19,11 +19,10 @@ import { SiPostgresql, SiMysql, SiMongodb, SiSnowflake } from 'react-icons/si'
 import { BiLogoGoogle } from 'react-icons/bi'
 import { FaFileCsv, FaFileExcel } from 'react-icons/fa'
 import { IconType } from 'react-icons'
+import { api } from '../lib/api'
 
-// Use VITE_API_URL in production, fallback to relative URL for dev proxy
-const API_BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api/v1`
-  : '/api/v1'
+// API base URL from environment
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
 
 interface Connection {
   id: string
@@ -101,12 +100,10 @@ export function Datasets() {
   const fetchConnections = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${API_BASE_URL}/connections/`)
-      if (response.ok) {
-        const data = await response.json()
-        // Only show connected databases
-        setConnections(data.filter((c: Connection) => c.status === 'connected'))
-      }
+      const response = await api.get('/connections/')
+      const data = response.data
+      // Only show connected databases
+      setConnections(data.filter((c: Connection) => c.status === 'connected'))
     } catch (error) {
       console.error('Failed to fetch connections:', error)
     } finally {
@@ -117,11 +114,8 @@ export function Datasets() {
   const fetchTables = async (connectionId: string) => {
     try {
       setTablesLoading(true)
-      const response = await fetch(`${API_BASE_URL}/connections/${connectionId}/tables`)
-      if (response.ok) {
-        const data = await response.json()
-        setTables(data)
-      }
+      const response = await api.get(`/connections/${connectionId}/tables`)
+      setTables(response.data)
     } catch (error) {
       console.error('Failed to fetch tables:', error)
     } finally {
@@ -134,36 +128,18 @@ export function Datasets() {
       setPreviewLoading(true)
       const offset = (page - 1) * pageSize
 
-      // Fetch columns only on first page, preview always
-      const requests: Promise<Response>[] = [
-        fetch(`${API_BASE_URL}/connections/${connectionId}/tables/${schema}/${table}/preview?limit=${pageSize}&offset=${offset}`)
-      ]
-
-      // Only fetch columns on first page
       if (page === 1) {
-        requests.unshift(
-          fetch(`${API_BASE_URL}/connections/${connectionId}/tables/${schema}/${table}/columns`)
-        )
-      }
-
-      const responses = await Promise.all(requests)
-
-      if (page === 1) {
-        const [columnsRes, previewRes] = responses
-        if (columnsRes.ok) {
-          const columnsData = await columnsRes.json()
-          setColumns(columnsData)
-        }
-        if (previewRes.ok) {
-          const previewData = await previewRes.json()
-          setPreview(previewData)
-        }
+        // Fetch both columns and preview on first page
+        const [columnsRes, previewRes] = await Promise.all([
+          api.get(`/connections/${connectionId}/tables/${schema}/${table}/columns`),
+          api.get(`/connections/${connectionId}/tables/${schema}/${table}/preview?limit=${pageSize}&offset=${offset}`)
+        ])
+        setColumns(columnsRes.data)
+        setPreview(previewRes.data)
       } else {
-        const [previewRes] = responses
-        if (previewRes.ok) {
-          const previewData = await previewRes.json()
-          setPreview(previewData)
-        }
+        // Only fetch preview on subsequent pages
+        const previewRes = await api.get(`/connections/${connectionId}/tables/${schema}/${table}/preview?limit=${pageSize}&offset=${offset}`)
+        setPreview(previewRes.data)
       }
 
       setCurrentPage(page)

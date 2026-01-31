@@ -20,8 +20,7 @@ import {
   Table2,
 } from 'lucide-react'
 import { QuickChartSuggestions } from '@/components/dashboard/QuickChartSuggestions'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { api } from '../lib/api'
 
 interface DashboardSummary {
   id: string
@@ -100,12 +99,8 @@ export function HomePage() {
   const fetchHomeData = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${API_BASE}/api/v1/dashboards/home`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch home page data')
-      }
-      const homeData = await response.json()
-      setData(homeData)
+      const response = await api.get('/dashboards/home')
+      setData(response.data)
     } catch (err) {
       console.error('Error fetching home data:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')

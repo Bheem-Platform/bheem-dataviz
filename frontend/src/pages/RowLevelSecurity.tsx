@@ -34,7 +34,7 @@ import {
   USER_ATTRIBUTE_OPTIONS,
 } from '../types/rls';
 import { RLSConditionEditor } from '../components/rls/RLSConditionEditor';
-import api from '../lib/api';
+import api, { rlsApi } from '../lib/api';
 import { cn } from '../lib/utils';
 
 type TabType = 'policies' | 'roles' | 'settings';
@@ -44,6 +44,7 @@ const RowLevelSecurity: React.FC = () => {
   const [policies, setPolicies] = useState<RLSPolicy[]>([]);
   const [roles, setRoles] = useState<SecurityRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Policy editing state
@@ -73,17 +74,19 @@ const RowLevelSecurity: React.FC = () => {
 
   const fetchData = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const [policiesRes, rolesRes, configRes] = await Promise.all([
-        api.get('/api/v1/rls/policies'),
-        api.get('/api/v1/rls/roles'),
-        api.get('/api/v1/rls/config'),
+        rlsApi.listPolicies(),
+        rlsApi.listRoles(),
+        rlsApi.getConfig(),
       ]);
       setPolicies(policiesRes.data || []);
       setRoles(rolesRes.data || []);
       setConfig(configRes.data || config);
-    } catch (error) {
-      console.error('Failed to fetch RLS data:', error);
+    } catch (err) {
+      console.error('Failed to fetch RLS data:', err);
+      setError('Failed to load RLS data. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +94,7 @@ const RowLevelSecurity: React.FC = () => {
 
   const fetchColumns = async (tableName: string, schemaName?: string) => {
     try {
-      const response = await api.get('/api/v1/queries/columns', {
+      const response = await api.get('/queries/columns', {
         params: { table: tableName, schema: schemaName },
       });
       setColumns(response.data.columns || response.data || []);
@@ -104,86 +107,92 @@ const RowLevelSecurity: React.FC = () => {
   // Policy CRUD
   const handleCreatePolicy = async (policy: RLSPolicy) => {
     try {
-      const response = await api.post('/api/v1/rls/policies', policy);
+      const response = await rlsApi.createPolicy(policy);
       setPolicies((prev) => [...prev, response.data]);
       setIsCreatingPolicy(false);
       setEditingPolicy(null);
-    } catch (error) {
-      console.error('Failed to create policy:', error);
+    } catch (err) {
+      console.error('Failed to create policy:', err);
+      setError('Failed to create policy. Please try again.');
     }
   };
 
   const handleUpdatePolicy = async (policy: RLSPolicy) => {
     try {
-      const response = await api.put(`/api/v1/rls/policies/${policy.id}`, policy);
+      const response = await rlsApi.updatePolicy(policy.id, policy);
       setPolicies((prev) => prev.map((p) => (p.id === policy.id ? response.data : p)));
       setEditingPolicy(null);
-    } catch (error) {
-      console.error('Failed to update policy:', error);
+    } catch (err) {
+      console.error('Failed to update policy:', err);
+      setError('Failed to update policy. Please try again.');
     }
   };
 
   const handleDeletePolicy = async (policyId: string) => {
     try {
-      await api.delete(`/api/v1/rls/policies/${policyId}`);
+      await rlsApi.deletePolicy(policyId);
       setPolicies((prev) => prev.filter((p) => p.id !== policyId));
       setDeleteTarget(null);
-    } catch (error) {
-      console.error('Failed to delete policy:', error);
+    } catch (err) {
+      console.error('Failed to delete policy:', err);
+      setError('Failed to delete policy. Please try again.');
     }
   };
 
   const handleTogglePolicy = async (policyId: string, enabled: boolean) => {
     try {
-      await api.put(`/api/v1/rls/policies/${policyId}/toggle`, null, {
-        params: { enabled },
-      });
+      await rlsApi.togglePolicy(policyId, enabled);
       setPolicies((prev) =>
         prev.map((p) => (p.id === policyId ? { ...p, enabled } : p))
       );
-    } catch (error) {
-      console.error('Failed to toggle policy:', error);
+    } catch (err) {
+      console.error('Failed to toggle policy:', err);
+      setError('Failed to toggle policy. Please try again.');
     }
   };
 
   // Role CRUD
   const handleCreateRole = async (role: SecurityRole) => {
     try {
-      const response = await api.post('/api/v1/rls/roles', role);
+      const response = await rlsApi.createRole(role);
       setRoles((prev) => [...prev, response.data]);
       setIsCreatingRole(false);
       setEditingRole(null);
-    } catch (error) {
-      console.error('Failed to create role:', error);
+    } catch (err) {
+      console.error('Failed to create role:', err);
+      setError('Failed to create role. Please try again.');
     }
   };
 
   const handleUpdateRole = async (role: SecurityRole) => {
     try {
-      const response = await api.put(`/api/v1/rls/roles/${role.id}`, role);
+      const response = await rlsApi.updateRole(role.id, role);
       setRoles((prev) => prev.map((r) => (r.id === role.id ? response.data : r)));
       setEditingRole(null);
-    } catch (error) {
-      console.error('Failed to update role:', error);
+    } catch (err) {
+      console.error('Failed to update role:', err);
+      setError('Failed to update role. Please try again.');
     }
   };
 
   const handleDeleteRole = async (roleId: string) => {
     try {
-      await api.delete(`/api/v1/rls/roles/${roleId}`);
+      await rlsApi.deleteRole(roleId);
       setRoles((prev) => prev.filter((r) => r.id !== roleId));
       setDeleteTarget(null);
-    } catch (error) {
-      console.error('Failed to delete role:', error);
+    } catch (err) {
+      console.error('Failed to delete role:', err);
+      setError('Failed to delete role. Please try again.');
     }
   };
 
   // Config update
   const handleUpdateConfig = async () => {
     try {
-      await api.put('/api/v1/rls/config', config);
-    } catch (error) {
-      console.error('Failed to update config:', error);
+      await rlsApi.updateConfig(config);
+    } catch (err) {
+      console.error('Failed to update config:', err);
+      setError('Failed to update configuration. Please try again.');
     }
   };
 
@@ -197,7 +206,22 @@ const RowLevelSecurity: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-full overflow-auto bg-gray-50">
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 mx-4 mt-4 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-500 hover:text-red-700"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

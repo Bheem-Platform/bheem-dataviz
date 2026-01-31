@@ -13,6 +13,7 @@ import {
   MoreHorizontal,
 } from 'lucide-react'
 import { KPIBuilder, KPIConfig } from '@/components/dashboard'
+import { api } from '../lib/api'
 
 const API_BASE_URL = '/api/v1'
 
@@ -125,33 +126,24 @@ function KPICard({
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`${API_BASE_URL}/kpi/calculate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          connection_id: kpi.config.connectionId,
-          semantic_model_id: kpi.config.semanticModelId,
-          transform_id: kpi.config.transformId,
-          table_name: kpi.config.tableName,
-          schema_name: kpi.config.schemaName || 'public',
-          measure_column: kpi.config.measureColumn,
-          aggregation: kpi.config.aggregation,
-          date_column: kpi.config.dateColumn,
-          comparison_period: kpi.config.comparisonPeriod || 'previous_month',
-          goal_value: kpi.config.goalValue,
-          goal_label: kpi.config.goalLabel,
-          include_trend: true,
-          trend_points: 7,
-        }),
+      const response = await api.post('/kpi/calculate', {
+        connection_id: kpi.config.connectionId,
+        semantic_model_id: kpi.config.semanticModelId,
+        transform_id: kpi.config.transformId,
+        table_name: kpi.config.tableName,
+        schema_name: kpi.config.schemaName || 'public',
+        measure_column: kpi.config.measureColumn,
+        aggregation: kpi.config.aggregation,
+        date_column: kpi.config.dateColumn,
+        comparison_period: kpi.config.comparisonPeriod || 'previous_month',
+        goal_value: kpi.config.goalValue,
+        goal_label: kpi.config.goalLabel,
+        include_trend: true,
+        trend_points: 7,
       })
-
-      if (!response.ok) {
-        throw new Error('Failed to load KPI')
-      }
-
-      setData(await response.json())
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error loading KPI')
+      setData(response.data)
+    } catch (err: any) {
+      setError(err.response?.data?.detail || err.message || 'Error loading KPI')
     } finally {
       setLoading(false)
     }
@@ -326,14 +318,10 @@ export function KPIs() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`${API_BASE_URL}/kpi/saved`)
-      if (!response.ok) {
-        throw new Error('Failed to load KPIs')
-      }
-      const data = await response.json()
-      setKpis(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error loading KPIs')
+      const response = await api.get('/kpi/saved')
+      setKpis(response.data)
+    } catch (err: any) {
+      setError(err.response?.data?.detail || err.message || 'Error loading KPIs')
     } finally {
       setLoading(false)
     }
@@ -348,43 +336,29 @@ export function KPIs() {
     try {
       if (editingKpi) {
         // Update existing KPI
-        const response = await fetch(`${API_BASE_URL}/kpi/saved/${editingKpi.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: config.title,
-            config,
-            connection_id: config.connectionId,
-            semantic_model_id: config.semanticModelId,
-            transform_id: config.transformId,
-          }),
+        await api.patch(`/kpi/saved/${editingKpi.id}`, {
+          name: config.title,
+          config,
+          connection_id: config.connectionId,
+          semantic_model_id: config.semanticModelId,
+          transform_id: config.transformId,
         })
-        if (!response.ok) {
-          throw new Error('Failed to update KPI')
-        }
         setEditingKpi(null)
       } else {
         // Create new KPI
-        const response = await fetch(`${API_BASE_URL}/kpi/saved`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: config.title,
-            config,
-            connection_id: config.connectionId,
-            semantic_model_id: config.semanticModelId,
-            transform_id: config.transformId,
-          }),
+        await api.post('/kpi/saved', {
+          name: config.title,
+          config,
+          connection_id: config.connectionId,
+          semantic_model_id: config.semanticModelId,
+          transform_id: config.transformId,
         })
-        if (!response.ok) {
-          throw new Error('Failed to create KPI')
-        }
       }
       setShowBuilder(false)
       loadKpis() // Reload the list
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving KPI:', err)
-      alert(err instanceof Error ? err.message : 'Failed to save KPI')
+      alert(err.response?.data?.detail || err.message || 'Failed to save KPI')
     }
   }
 
@@ -394,16 +368,11 @@ export function KPIs() {
       return
     }
     try {
-      const response = await fetch(`${API_BASE_URL}/kpi/saved/${id}`, {
-        method: 'DELETE',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to delete KPI')
-      }
+      await api.delete(`/kpi/saved/${id}`)
       loadKpis() // Reload the list
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting KPI:', err)
-      alert(err instanceof Error ? err.message : 'Failed to delete KPI')
+      alert(err.response?.data?.detail || err.message || 'Failed to delete KPI')
     }
   }
 

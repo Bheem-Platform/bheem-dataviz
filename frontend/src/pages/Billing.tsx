@@ -4,7 +4,7 @@
  * Subscription management and billing history.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CreditCard,
   Check,
@@ -14,7 +14,9 @@ import {
   Download,
   Calendar,
   Receipt,
+  AlertCircle,
 } from 'lucide-react';
+import { billingApi } from '../lib/api';
 
 interface Plan {
   id: string;
@@ -33,43 +35,85 @@ interface Invoice {
   pdfUrl: string;
 }
 
-const plans: Plan[] = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: 0,
-    interval: 'month',
-    features: ['5 Dashboards', '2 Data Connections', '1,000 Queries/day', 'Community Support'],
-  },
-  {
-    id: 'pro',
-    name: 'Professional',
-    price: 49,
-    interval: 'month',
-    features: ['Unlimited Dashboards', '10 Data Connections', '50,000 Queries/day', 'Email Support', 'Row-Level Security'],
-    isPopular: true,
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 199,
-    interval: 'month',
-    features: ['Everything in Pro', 'Unlimited Connections', 'Unlimited Queries', 'SSO/SAML', 'Dedicated Support', 'Custom Integrations'],
-  },
-];
-
-const mockInvoices: Invoice[] = [
-  { id: 'inv-001', date: '2026-01-01', amount: 49.00, status: 'paid', pdfUrl: '#' },
-  { id: 'inv-002', date: '2025-12-01', amount: 49.00, status: 'paid', pdfUrl: '#' },
-  { id: 'inv-003', date: '2025-11-01', amount: 49.00, status: 'paid', pdfUrl: '#' },
-];
-
 export function Billing() {
-  const [currentPlan] = useState('pro');
-  const [invoices] = useState<Invoice[]>(mockInvoices);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [currentPlan, setCurrentPlan] = useState<string>('');
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchBillingData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch plans
+        const plansResponse = await billingApi.listPlans();
+        if (plansResponse.data) {
+          setPlans(plansResponse.data);
+        }
+
+        // Fetch current subscription (using a default workspace ID for now)
+        // In a real app, you would get this from user context
+        try {
+          const subscriptionResponse = await billingApi.getWorkspaceSubscription('default');
+          if (subscriptionResponse.data?.plan_id) {
+            setCurrentPlan(subscriptionResponse.data.plan_id);
+          }
+        } catch {
+          // No subscription found, keep empty
+        }
+
+        // Fetch invoices
+        try {
+          const invoicesResponse = await billingApi.listInvoices('default');
+          if (invoicesResponse.data) {
+            setInvoices(invoicesResponse.data);
+          }
+        } catch {
+          // No invoices found, keep empty
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load billing data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBillingData();
+  }, []);
+
+  if (error) {
+    return (
+      <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <div>
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                  Error loading billing data
+                </h3>
+                <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Loading billing data...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

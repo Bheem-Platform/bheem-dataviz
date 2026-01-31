@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, CurrentUser
 from app.schemas.kodee import (
     NLQueryRequest,
     NLQueryResponse,
@@ -34,7 +34,7 @@ router = APIRouter()
 @router.post("/query", response_model=NLQueryResponse)
 async def generate_sql_query(
     request: NLQueryRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """
@@ -46,7 +46,7 @@ async def generate_sql_query(
     service = get_kodee_service(db)
     return await service.generate_sql(
         request,
-        user_id=current_user.get("user_id"),
+        user_id=current_user.id,
     )
 
 
@@ -56,7 +56,7 @@ async def generate_sql_query(
 async def get_schema_context(
     connection_id: str,
     model_id: Optional[str] = Query(None, description="Semantic model ID"),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """
@@ -76,7 +76,7 @@ async def get_schema_context(
 @router.post("/chat", response_model=ChatResponse)
 async def chat_with_kodee(
     request: ChatRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """
@@ -88,7 +88,7 @@ async def chat_with_kodee(
     service = get_kodee_service(db)
     return await service.chat(
         request,
-        user_id=current_user.get("user_id"),
+        user_id=current_user.id,
     )
 
 
@@ -96,13 +96,13 @@ async def chat_with_kodee(
 async def create_chat_session(
     connection_id: Optional[str] = None,
     model_id: Optional[str] = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """Create a new chat session"""
     service = get_kodee_service(db)
     return await service.create_session(
-        user_id=current_user.get("user_id"),
+        user_id=current_user.id,
         connection_id=connection_id,
         model_id=model_id,
     )
@@ -111,7 +111,7 @@ async def create_chat_session(
 @router.get("/chat/session/{session_id}", response_model=ChatSession)
 async def get_chat_session(
     session_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """Get a chat session by ID"""
@@ -126,13 +126,13 @@ async def get_chat_session(
 async def list_chat_sessions(
     connection_id: Optional[str] = None,
     limit: int = Query(20, le=100),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """List chat sessions for the current user"""
     service = get_kodee_service(db)
 
-    query = {"user_id": current_user.get("user_id")}
+    query = {"user_id": current_user.id}
     if connection_id:
         query["connection_id"] = connection_id
 
@@ -148,7 +148,7 @@ async def list_chat_sessions(
 @router.post("/validate", response_model=QueryValidation)
 async def validate_sql(
     request: SQLValidationRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """
@@ -175,13 +175,13 @@ async def get_query_history(
     connection_id: Optional[str] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """Get query history for the current user"""
     service = get_kodee_service(db)
     items, total = await service.get_query_history(
-        user_id=current_user.get("user_id"),
+        user_id=current_user.id,
         connection_id=connection_id,
         page=page,
         page_size=page_size,
@@ -198,14 +198,14 @@ async def get_query_history(
 @router.delete("/history/{query_id}")
 async def delete_query_from_history(
     query_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """Delete a query from history"""
     service = get_kodee_service(db)
     result = await service.history_collection.delete_one({
         "id": query_id,
-        "user_id": current_user.get("user_id"),
+        "user_id": current_user.id,
     })
 
     if result.deleted_count == 0:
@@ -219,7 +219,7 @@ async def delete_query_from_history(
 @router.post("/feedback")
 async def submit_query_feedback(
     feedback: QueryFeedback,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """
@@ -229,7 +229,7 @@ async def submit_query_feedback(
     """
     feedback_doc = {
         "id": feedback.query_id,
-        "user_id": current_user.get("user_id"),
+        "user_id": current_user.id,
         "rating": feedback.rating,
         "correct_sql": feedback.correct_sql,
         "comments": feedback.comments,
@@ -251,7 +251,7 @@ async def submit_query_feedback(
 
 @router.get("/examples")
 async def get_query_examples(
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Get example questions and SQL queries"""
     return {
@@ -299,7 +299,7 @@ async def get_query_examples(
 async def get_query_suggestions(
     connection_id: str,
     model_id: Optional[str] = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db),
 ):
     """

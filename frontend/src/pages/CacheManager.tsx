@@ -4,7 +4,7 @@
  * Query caching management and performance optimization.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Database,
   RefreshCw,
@@ -17,6 +17,7 @@ import {
   AlertCircle,
   CheckCircle,
 } from 'lucide-react';
+import { cachingApi } from '../lib/api';
 
 interface CacheEntry {
   key: string;
@@ -37,45 +38,14 @@ interface CacheStats {
   avg_ttl_minutes: number;
 }
 
-// Mock data
-const mockStats: CacheStats = {
-  total_entries: 1250,
-  total_size_mb: 256.5,
-  hit_rate: 87.3,
-  miss_rate: 12.7,
-  evictions_today: 45,
-  avg_ttl_minutes: 30,
+const defaultStats: CacheStats = {
+  total_entries: 0,
+  total_size_mb: 0,
+  hit_rate: 0,
+  miss_rate: 0,
+  evictions_today: 0,
+  avg_ttl_minutes: 0,
 };
-
-const mockEntries: CacheEntry[] = [
-  {
-    key: 'query:sales_by_region:hash123',
-    type: 'query_result',
-    size_bytes: 524288,
-    created_at: '2026-01-30T10:00:00Z',
-    expires_at: '2026-01-30T10:30:00Z',
-    access_count: 156,
-    status: 'valid',
-  },
-  {
-    key: 'dashboard:dash-1:data',
-    type: 'dashboard_data',
-    size_bytes: 1048576,
-    created_at: '2026-01-30T09:45:00Z',
-    expires_at: '2026-01-30T10:15:00Z',
-    access_count: 89,
-    status: 'stale',
-  },
-  {
-    key: 'schema:conn-1:tables',
-    type: 'connection_schema',
-    size_bytes: 65536,
-    created_at: '2026-01-30T08:00:00Z',
-    expires_at: '2026-01-30T14:00:00Z',
-    access_count: 234,
-    status: 'valid',
-  },
-];
 
 const statusColors = {
   valid: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400' },
@@ -84,10 +54,33 @@ const statusColors = {
 };
 
 export function CacheManager() {
-  const [stats] = useState<CacheStats>(mockStats);
-  const [entries, setEntries] = useState<CacheEntry[]>(mockEntries);
+  const [stats, setStats] = useState<CacheStats>(defaultStats);
+  const [entries, setEntries] = useState<CacheEntry[]>([]);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      setError(null);
+      const [statsResponse, keysResponse] = await Promise.all([
+        cachingApi.getStats(),
+        cachingApi.listKeys(),
+      ]);
+      setStats(statsResponse.data);
+      setEntries(keysResponse.data.keys || keysResponse.data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch cache data');
+      console.error('Error fetching cache data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const formatBytes = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -97,24 +90,66 @@ export function CacheManager() {
 
   const handleRefreshStats = async () => {
     setIsRefreshing(true);
-    await new Promise(r => setTimeout(r, 1000));
+    await fetchData();
     setIsRefreshing(false);
   };
 
-  const handleClearAll = () => {
-    setEntries([]);
+  const handleClearAll = async () => {
+    try {
+      setError(null);
+      await cachingApi.clearAll(true);
+      setEntries([]);
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clear cache');
+      console.error('Error clearing cache:', err);
+    }
   };
 
-  const handleInvalidate = (key: string) => {
-    setEntries(entries.filter(e => e.key !== key));
+  const handleInvalidate = async (key: string) => {
+    try {
+      setError(null);
+      await cachingApi.deleteKey(key);
+      setEntries(entries.filter(e => e.key !== key));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to invalidate cache entry');
+      console.error('Error invalidating cache entry:', err);
+    }
   };
 
   const filteredEntries = selectedType === 'all'
     ? entries
     : entries.filter(e => e.type === selectedType);
 
+  if (isLoading) {
+    return (
+      <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Loading cache data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+            <p className="text-red-700 dark:text-red-400">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="ml-auto text-red-500 hover:text-red-700"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

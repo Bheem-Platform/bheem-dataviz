@@ -75,7 +75,7 @@ async def get_audit_logs(
         end_date=end_date,
     )
 
-    logs = await audit_service.get_audit_logs(filters, skip=skip, limit=limit)
+    logs, total = await audit_service.query_logs(filters, page=skip//limit + 1, page_size=limit)
     return logs
 
 
@@ -86,7 +86,7 @@ async def get_audit_log(
 ):
     """Get a specific audit log entry by ID."""
     audit_service = AuditService(db)
-    log = await audit_service.get_audit_log_by_id(log_id)
+    log = await audit_service.get_log(log_id)
 
     if not log:
         raise HTTPException(status_code=404, detail="Audit log not found")
@@ -113,7 +113,7 @@ async def get_audit_summary(
     - Activity by category
     """
     audit_service = AuditService(db)
-    summary = await audit_service.get_audit_summary(
+    summary = await audit_service.get_summary(
         workspace_id=workspace_id,
         start_date=start_date,
         end_date=end_date,
@@ -134,10 +134,10 @@ async def export_audit_logs(
     audit_service = AuditService(db)
 
     # Get filtered logs
-    logs = await audit_service.get_audit_logs(
+    logs, total = await audit_service.query_logs(
         export_config.filters or AuditLogFilter(),
-        skip=0,
-        limit=export_config.max_records,
+        page=1,
+        page_size=export_config.max_records,
     )
 
     if export_config.format == "json":
@@ -214,10 +214,7 @@ async def get_user_activity(
     - Login statistics
     """
     audit_service = AuditService(db)
-    summary = await audit_service.get_user_activity_summary(
-        user_id=user_id,
-        workspace_id=workspace_id,
-    )
+    summary = await audit_service.get_user_activity(user_id=user_id)
     return summary
 
 
@@ -253,7 +250,7 @@ async def get_security_alerts(
         end_date=end_date,
     )
 
-    alerts = await audit_service.get_security_alerts(filters, skip=skip, limit=limit)
+    alerts = await audit_service.query_alerts(filters, skip=skip, limit=limit)
     return alerts
 
 
@@ -264,7 +261,7 @@ async def get_security_alert(
 ):
     """Get a specific security alert by ID."""
     audit_service = AuditService(db)
-    alert = await audit_service.get_security_alert_by_id(alert_id)
+    alert = await audit_service.get_alert(alert_id)
 
     if not alert:
         raise HTTPException(status_code=404, detail="Security alert not found")
@@ -284,7 +281,7 @@ async def create_security_alert(
     but this endpoint allows manual creation for special cases.
     """
     audit_service = AuditService(db)
-    created_alert = await audit_service.create_security_alert(alert)
+    created_alert = await audit_service.create_alert(alert)
     return created_alert
 
 
@@ -307,7 +304,7 @@ async def update_security_alert(
     # Get current user ID from auth context
     resolved_by = None  # TODO: Get from auth context
 
-    updated_alert = await audit_service.update_security_alert(
+    updated_alert = await audit_service.update_alert(
         alert_id=alert_id,
         update=update,
         resolved_by=resolved_by,
@@ -335,7 +332,7 @@ async def resolve_security_alert(
 
     resolved_by = None  # TODO: Get from auth context
 
-    updated_alert = await audit_service.update_security_alert(
+    updated_alert = await audit_service.update_alert(
         alert_id=alert_id,
         update=update,
         resolved_by=resolved_by,
@@ -363,7 +360,7 @@ async def dismiss_security_alert(
 
     resolved_by = None  # TODO: Get from auth context
 
-    updated_alert = await audit_service.update_security_alert(
+    updated_alert = await audit_service.update_alert(
         alert_id=alert_id,
         update=update,
         resolved_by=resolved_by,

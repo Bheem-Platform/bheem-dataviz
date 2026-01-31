@@ -15,7 +15,6 @@ from app.models.dashboard import (
 from app.models.connection import Connection as ConnectionModel, ConnectionType
 from app.models.semantic import SemanticModel
 from app.models.transform import TransformRecipe
-from app.models.user import User
 from app.schemas.filter import (
     FilterCondition, FilterOptionsResponse, MultiColumnFilterOptionsResponse,
     SlicerConfig, GlobalFilterConfig, ApplyFiltersRequest,
@@ -28,7 +27,7 @@ from app.services.postgres_service import postgres_service
 from app.services.mysql_service import MySQLService
 from app.services.encryption_service import encryption_service
 from app.services.transform_service import get_transform_service
-from app.core.security import get_current_user
+from app.core.security import get_current_user, CurrentUser
 from pydantic import BaseModel
 import uuid as uuid_module
 
@@ -104,7 +103,7 @@ async def get_filter_options_for_column(
     search: Optional[str] = None,
     limit: int = Query(default=100, le=500),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """
     Get distinct values for a column to populate filter options.
@@ -136,7 +135,7 @@ async def get_filter_options_for_multiple_columns(
     existing_filters: Optional[List[FilterCondition]] = None,
     limit: int = Query(default=50, le=200),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """
     Get filter options for multiple columns at once.
@@ -174,7 +173,7 @@ async def get_filter_options_for_chart(
     columns: Optional[List[str]] = Query(default=None),
     limit: int = Query(default=50, le=200),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """
     Get filter options for a chart based on its data source.
@@ -270,7 +269,7 @@ async def list_filter_presets(
     dashboard_id: Optional[UUID] = None,
     chart_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """List saved filter presets."""
     query = select(SavedFilterPreset)
@@ -290,7 +289,7 @@ async def create_filter_preset(
     dashboard_id: Optional[UUID] = None,
     chart_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Create a new filter preset."""
     # If this is set as default, unset other defaults
@@ -327,7 +326,7 @@ async def create_filter_preset(
 async def get_filter_preset(
     preset_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Get a filter preset by ID."""
     result = await db.execute(
@@ -346,7 +345,7 @@ async def update_filter_preset(
     preset_id: UUID,
     request: SaveFiltersRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Update a filter preset."""
     result = await db.execute(
@@ -374,7 +373,7 @@ async def update_filter_preset(
 async def delete_filter_preset(
     preset_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Delete a filter preset."""
     result = await db.execute(
@@ -398,7 +397,7 @@ async def get_dashboard_filter_state(
     dashboard_id: UUID,
     session_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Get the current filter state for a dashboard."""
     query = select(DashboardFilterState).where(
@@ -442,7 +441,7 @@ async def update_dashboard_filter_state(
     dashboard_id: UUID,
     request: UpdateFilterStateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Update the filter state for a dashboard."""
     # Find existing state or create new
@@ -490,7 +489,7 @@ async def clear_dashboard_filter_state(
     dashboard_id: UUID,
     session_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Clear the filter state for a dashboard."""
     query = select(DashboardFilterState).where(
@@ -523,7 +522,7 @@ async def update_dashboard_slicers(
     dashboard_id: UUID,
     request: SlicerConfigRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Update the slicer configuration for a dashboard."""
     result = await db.execute(
@@ -549,7 +548,7 @@ async def update_dashboard_slicers(
 async def get_dashboard_slicers(
     dashboard_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Get the slicer configuration for a dashboard."""
     result = await db.execute(

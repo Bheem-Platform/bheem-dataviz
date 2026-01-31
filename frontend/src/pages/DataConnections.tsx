@@ -5,11 +5,10 @@ import { BiLogoGoogle } from 'react-icons/bi'
 import { FaFileCsv, FaFileExcel } from 'react-icons/fa'
 import { TbApi } from 'react-icons/tb'
 import { IconType } from 'react-icons'
+import { api } from '../lib/api'
 
-// Use VITE_API_URL in production, fallback to relative URL for dev proxy
-const API_BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api/v1`
-  : '/api/v1'
+// API base URL from environment
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
 
 const connectionTypes: { id: string; name: string; icon: IconType; color: string }[] = [
   { id: 'postgresql', name: 'PostgreSQL', icon: SiPostgresql, color: '#336791' },
@@ -114,11 +113,8 @@ export function DataConnections() {
 
   const fetchConnections = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/connections/`)
-      if (response.ok) {
-        const data = await response.json()
-        setConnections(data)
-      }
+      const response = await api.get('/connections/')
+      setConnections(response.data)
     } catch (error) {
       console.error('Failed to fetch connections:', error)
     } finally {
@@ -214,14 +210,8 @@ export function DataConnections() {
         }
       }
 
-      const response = await fetch(`${API_BASE_URL}/connections/test`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-
-      const result = await response.json()
-      setTestResult(result)
+      const response = await api.post('/connections/test', payload)
+      setTestResult(response.data)
     } catch (error) {
       setTestResult({
         success: false,
@@ -275,24 +265,14 @@ export function DataConnections() {
         }
       }
 
-      const response = await fetch(`${API_BASE_URL}/connections/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-
-      if (response.ok) {
-        const newConnection = await response.json()
-        setConnections([...connections, newConnection])
-        closeModal()
-        // Auto-test the connection after saving
-        testSavedConnection(newConnection.id)
-      } else {
-        const error = await response.json()
-        alert(`Failed to save: ${error.detail || 'Unknown error'}`)
-      }
-    } catch (error) {
-      alert(`Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      const response = await api.post('/connections/', payload)
+      const newConnection = response.data
+      setConnections([...connections, newConnection])
+      closeModal()
+      // Auto-test the connection after saving
+      testSavedConnection(newConnection.id)
+    } catch (error: any) {
+      alert(`Failed to save: ${error.response?.data?.detail || error.message || 'Unknown error'}`)
     } finally {
       setSaving(false)
     }
@@ -303,19 +283,11 @@ export function DataConnections() {
 
     setDeleting(id)
     try {
-      const response = await fetch(`${API_BASE_URL}/connections/${id}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        setConnections(connections.filter(c => c.id !== id))
-      } else {
-        const error = await response.json()
-        alert(`Failed to delete: ${error.detail || 'Unknown error'}`)
-      }
-    } catch (error) {
+      await api.delete(`/connections/${id}`)
+      setConnections(connections.filter(c => c.id !== id))
+    } catch (error: any) {
       console.error('Failed to delete connection:', error)
-      alert(`Failed to delete: ${error instanceof Error ? error.message : 'Network error'}`)
+      alert(`Failed to delete: ${error.response?.data?.detail || error.message || 'Network error'}`)
     } finally {
       setDeleting(null)
     }
@@ -323,13 +295,8 @@ export function DataConnections() {
 
   const testSavedConnection = async (id: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/connections/${id}/test`, {
-        method: 'POST'
-      })
-
-      if (response.ok) {
-        fetchConnections() // Refresh to get updated status
-      }
+      await api.post(`/connections/${id}/test`)
+      fetchConnections() // Refresh to get updated status
     } catch (error) {
       console.error('Failed to test connection:', error)
     }
@@ -396,25 +363,18 @@ export function DataConnections() {
         formData.append('sheet_name', selectedSheet)
       }
 
-      const response = await fetch(`${API_BASE_URL}/connections/upload-preview`, {
-        method: 'POST',
-        body: formData
+      const response = await api.post('/connections/upload-preview', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
-
-      if (response.ok) {
-        const data: PreviewData = await response.json()
-        setPreviewData(data)
-        setColumnConfig(data.columns.map(col => ({
-          ...col,
-          type: col.type || col.detected_type || 'TEXT'
-        })))
-        setModalStep('file-preview')
-      } else {
-        const error = await response.json()
-        alert(`Failed to parse file: ${error.detail || 'Unknown error'}`)
-      }
-    } catch (error) {
-      alert(`Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      const data: PreviewData = response.data
+      setPreviewData(data)
+      setColumnConfig(data.columns.map(col => ({
+        ...col,
+        type: col.type || col.detected_type || 'TEXT'
+      })))
+      setModalStep('file-preview')
+    } catch (error: any) {
+      alert(`Failed to upload file: ${error.response?.data?.detail || error.message || 'Unknown error'}`)
     } finally {
       setUploading(false)
     }
@@ -429,26 +389,16 @@ export function DataConnections() {
     setSaving(true)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/connections/upload-confirm`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: connectionName,
-          file_id: previewData.file_id,
-          column_config: columnConfig
-        })
+      const response = await api.post('/connections/upload-confirm', {
+        name: connectionName,
+        file_id: previewData.file_id,
+        column_config: columnConfig
       })
-
-      if (response.ok) {
-        const result = await response.json()
-        setConnections([...connections, result.connection])
-        closeModal()
-      } else {
-        const error = await response.json()
-        alert(`Failed to import: ${error.detail || 'Unknown error'}`)
-      }
-    } catch (error) {
-      alert(`Failed to import: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      const result = response.data
+      setConnections([...connections, result.connection])
+      closeModal()
+    } catch (error: any) {
+      alert(`Failed to import: ${error.response?.data?.detail || error.message || 'Unknown error'}`)
     } finally {
       setSaving(false)
     }

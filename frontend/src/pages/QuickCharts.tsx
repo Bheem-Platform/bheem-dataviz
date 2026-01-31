@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import ReactECharts from 'echarts-for-react'
 import {
   Sparkles,
@@ -120,13 +120,19 @@ const chartTypeIcons: Record<string, typeof BarChart3> = {
 
 export function QuickCharts() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  // Get initial values from URL params (from Quick Insights)
+  const initialConnection = searchParams.get('connection') || ''
+  const initialSchema = searchParams.get('schema') || 'public'
+  const initialTable = searchParams.get('table') || ''
 
   // State
   const [connections, setConnections] = useState<Connection[]>([])
-  const [selectedConnection, setSelectedConnection] = useState<string>('')
+  const [selectedConnection, setSelectedConnection] = useState<string>(initialConnection)
   const [tables, setTables] = useState<TableSummary[]>([])
-  const [selectedTable, setSelectedTable] = useState<string>('')
-  const [selectedSchema, setSelectedSchema] = useState<string>('public')
+  const [selectedTable, setSelectedTable] = useState<string>(initialTable)
+  const [selectedSchema, setSelectedSchema] = useState<string>(initialSchema)
   const [suggestions, setSuggestions] = useState<QuickChartResponse | null>(null)
   const [dashboards, setDashboards] = useState<Dashboard[]>([])
 
@@ -148,6 +154,9 @@ export function QuickCharts() {
   const [customizations, setCustomizations] = useState<Record<string, CustomizationState>>({})
   const [expandedSection, setExpandedSection] = useState<string | null>('title')
 
+  // Track if this is the initial load from URL params
+  const [isInitialLoad, setIsInitialLoad] = useState(!!initialConnection)
+
   // Fetch connections on mount
   useEffect(() => {
     fetchConnections()
@@ -159,14 +168,18 @@ export function QuickCharts() {
     if (selectedConnection) {
       fetchTables(selectedConnection)
       setSuggestions(null)
-      setSelectedTable('')
+      // Only reset table if not initial load from URL params
+      if (!isInitialLoad) {
+        setSelectedTable('')
+      }
     }
   }, [selectedConnection])
 
-  // Fetch suggestions when table changes
+  // Fetch suggestions when table changes (or on initial load with URL params)
   useEffect(() => {
     if (selectedConnection && selectedTable) {
       fetchSuggestions()
+      setIsInitialLoad(false) // Clear initial load flag after first fetch
     }
   }, [selectedConnection, selectedTable, selectedSchema])
 

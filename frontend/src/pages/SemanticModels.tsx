@@ -21,10 +21,9 @@ import {
   Code,
   Wand2,
 } from 'lucide-react'
+import { api } from '../lib/api'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api/v1`
-  : '/api/v1'
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
 
 // Types
 interface Connection {
@@ -224,10 +223,8 @@ export function SemanticModels() {
 
   const fetchModels = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/models/`)
-      if (response.ok) {
-        setModels(await response.json())
-      }
+      const response = await api.get('/models/')
+      setModels(response.data)
     } catch (error) {
       console.error('Failed to fetch models:', error)
     } finally {
@@ -237,11 +234,9 @@ export function SemanticModels() {
 
   const fetchConnections = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/connections/`)
-      if (response.ok) {
-        const data = await response.json()
-        setConnections(data.filter((c: Connection) => c.status === 'connected'))
-      }
+      const response = await api.get('/connections/')
+      const data = response.data
+      setConnections(data.filter((c: Connection) => c.status === 'connected'))
     } catch (error) {
       console.error('Failed to fetch connections:', error)
     }
@@ -249,10 +244,8 @@ export function SemanticModels() {
 
   const fetchTransforms = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/transforms/`)
-      if (response.ok) {
-        setTransforms(await response.json())
-      }
+      const response = await api.get('/transforms/')
+      setTransforms(response.data)
     } catch (error) {
       console.error('Failed to fetch transforms:', error)
     }
@@ -262,19 +255,15 @@ export function SemanticModels() {
     setLoadingColumns(true)
     try {
       // Execute transform with limit 1 to get column info
-      const response = await fetch(`${API_BASE_URL}/transforms/${transformId}/execute?limit=1`, {
-        method: 'POST'
-      })
-      if (response.ok) {
-        const data = await response.json()
-        // Convert column objects to ColumnInfo format
-        const cols: ColumnInfo[] = (data.columns || []).map((col: any) => ({
-          name: typeof col === 'string' ? col : col.name,
-          type: typeof col === 'string' ? 'unknown' : (col.type || 'unknown'),
-          nullable: true
-        }))
-        setColumns(cols)
-      }
+      const response = await api.post(`/transforms/${transformId}/execute?limit=1`)
+      const data = response.data
+      // Convert column objects to ColumnInfo format
+      const cols: ColumnInfo[] = (data.columns || []).map((col: any) => ({
+        name: typeof col === 'string' ? col : col.name,
+        type: typeof col === 'string' ? 'unknown' : (col.type || 'unknown'),
+        nullable: true
+      }))
+      setColumns(cols)
     } catch (error) {
       console.error('Failed to fetch transform columns:', error)
     } finally {
@@ -285,10 +274,8 @@ export function SemanticModels() {
   const fetchTables = async (connectionId: string) => {
     setLoadingTables(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/connections/${connectionId}/tables`)
-      if (response.ok) {
-        setTables(await response.json())
-      }
+      const response = await api.get(`/connections/${connectionId}/tables`)
+      setTables(response.data)
     } catch (error) {
       console.error('Failed to fetch tables:', error)
     } finally {
@@ -299,10 +286,8 @@ export function SemanticModels() {
   const fetchColumns = async (connectionId: string, schema: string, table: string) => {
     setLoadingColumns(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/connections/${connectionId}/tables/${schema}/${table}/columns`)
-      if (response.ok) {
-        setColumns(await response.json())
-      }
+      const response = await api.get(`/connections/${connectionId}/tables/${schema}/${table}/columns`)
+      setColumns(response.data)
     } catch (error) {
       console.error('Failed to fetch columns:', error)
     } finally {
@@ -326,39 +311,37 @@ export function SemanticModels() {
 
   const editModel = async (modelId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/models/${modelId}`)
-      if (response.ok) {
-        const model = await response.json()
-        setEditingModel(model)
-        setModelName(model.name)
-        setModelDescription(model.description || '')
-        clearPreview()
+      const response = await api.get(`/models/${modelId}`)
+      const model = response.data
+      setEditingModel(model)
+      setModelName(model.name)
+      setModelDescription(model.description || '')
+      clearPreview()
 
-        // Set source type and related fields
-        if (model.transform_id) {
-          setSourceType('transform')
-          const transform = transforms.find(t => t.id === model.transform_id)
-          setSelectedTransform(transform || null)
-          if (transform) {
-            fetchTransformColumns(transform.id)
-          }
-          setSelectedTable('')
-          setSelectedSchema('')
-        } else {
-          setSourceType('table')
-          setSelectedTransform(null)
-          setSelectedTable(model.table_name || '')
-          setSelectedSchema(model.schema_name || 'public')
+      // Set source type and related fields
+      if (model.transform_id) {
+        setSourceType('transform')
+        const transform = transforms.find(t => t.id === model.transform_id)
+        setSelectedTransform(transform || null)
+        if (transform) {
+          fetchTransformColumns(transform.id)
         }
-
-        // Set connection
-        const conn = connections.find(c => c.id === model.connection_id)
-        if (conn) {
-          setSelectedConnection(conn)
-        }
-
-        setViewMode('editor')
+        setSelectedTable('')
+        setSelectedSchema('')
+      } else {
+        setSourceType('table')
+        setSelectedTransform(null)
+        setSelectedTable(model.table_name || '')
+        setSelectedSchema(model.schema_name || 'public')
       }
+
+      // Set connection
+      const conn = connections.find(c => c.id === model.connection_id)
+      if (conn) {
+        setSelectedConnection(conn)
+      }
+
+      setViewMode('editor')
     } catch (error) {
       console.error('Failed to fetch model:', error)
     }
@@ -368,10 +351,8 @@ export function SemanticModels() {
     if (!confirm('Are you sure you want to delete this model?')) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/models/${modelId}`, { method: 'DELETE' })
-      if (response.ok) {
-        fetchModels()
-      }
+      await api.delete(`/models/${modelId}`)
+      fetchModels()
     } catch (error) {
       console.error('Failed to delete model:', error)
     }
@@ -398,11 +379,7 @@ export function SemanticModels() {
     try {
       if (editingModel) {
         // Update existing model
-        await fetch(`${API_BASE_URL}/models/${editingModel.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: modelName, description: modelDescription })
-        })
+        await api.put(`/models/${editingModel.id}`, { name: modelName, description: modelDescription })
       } else {
         // Create new model
         const connectionId = sourceType === 'transform'
@@ -424,16 +401,9 @@ export function SemanticModels() {
               table_name: selectedTable
             }
 
-        const response = await fetch(`${API_BASE_URL}/models/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        })
-
-        if (response.ok) {
-          const newModel = await response.json()
-          setEditingModel(newModel)
-        }
+        const response = await api.post('/models/', body)
+        const newModel = response.data
+        setEditingModel(newModel)
       }
 
       fetchModels()
@@ -449,18 +419,11 @@ export function SemanticModels() {
     if (!editingModel || !newMeasure.name || !newMeasure.column_name) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/models/${editingModel.id}/measures`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMeasure)
-      })
-
-      if (response.ok) {
-        const updated = await response.json()
-        setEditingModel(updated)
-        setShowMeasureModal(false)
-        setNewMeasure({ name: '', column_name: '', aggregation: 'sum', description: '' })
-      }
+      const response = await api.post(`/models/${editingModel.id}/measures`, newMeasure)
+      const updated = response.data
+      setEditingModel(updated)
+      setShowMeasureModal(false)
+      setNewMeasure({ name: '', column_name: '', aggregation: 'sum', description: '' })
     } catch (error) {
       console.error('Failed to add measure:', error)
     }
@@ -470,14 +433,9 @@ export function SemanticModels() {
     if (!editingModel) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/models/${editingModel.id}/measures/${measureId}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        const updated = await response.json()
-        setEditingModel(updated)
-      }
+      const response = await api.delete(`/models/${editingModel.id}/measures/${measureId}`)
+      const updated = response.data
+      setEditingModel(updated)
     } catch (error) {
       console.error('Failed to remove measure:', error)
     }
@@ -487,18 +445,11 @@ export function SemanticModels() {
     if (!editingModel || !newDimension.name || !newDimension.column_name) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/models/${editingModel.id}/dimensions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newDimension)
-      })
-
-      if (response.ok) {
-        const updated = await response.json()
-        setEditingModel(updated)
-        setShowDimensionModal(false)
-        setNewDimension({ name: '', column_name: '', description: '' })
-      }
+      const response = await api.post(`/models/${editingModel.id}/dimensions`, newDimension)
+      const updated = response.data
+      setEditingModel(updated)
+      setShowDimensionModal(false)
+      setNewDimension({ name: '', column_name: '', description: '' })
     } catch (error) {
       console.error('Failed to add dimension:', error)
     }
@@ -508,14 +459,9 @@ export function SemanticModels() {
     if (!editingModel) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/models/${editingModel.id}/dimensions/${dimensionId}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        const updated = await response.json()
-        setEditingModel(updated)
-      }
+      const response = await api.delete(`/models/${editingModel.id}/dimensions/${dimensionId}`)
+      const updated = response.data
+      setEditingModel(updated)
     } catch (error) {
       console.error('Failed to remove dimension:', error)
     }
@@ -525,10 +471,8 @@ export function SemanticModels() {
     if (!selectedConnection) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/connections/${selectedConnection.id}/tables/${selectedSchema}/${tableName}/columns`)
-      if (response.ok) {
-        setJoinTableColumns(await response.json())
-      }
+      const response = await api.get(`/connections/${selectedConnection.id}/tables/${selectedSchema}/${tableName}/columns`)
+      setJoinTableColumns(response.data)
     } catch (error) {
       console.error('Failed to fetch columns:', error)
     }
@@ -536,18 +480,14 @@ export function SemanticModels() {
 
   const fetchJoinTransformColumns = async (transformId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/transforms/${transformId}/execute?limit=1`, {
-        method: 'POST'
-      })
-      if (response.ok) {
-        const data = await response.json()
-        const cols: ColumnInfo[] = (data.columns || []).map((col: any) => ({
-          name: typeof col === 'string' ? col : col.name,
-          type: typeof col === 'string' ? 'unknown' : (col.type || 'unknown'),
-          nullable: true
-        }))
-        setJoinTableColumns(cols)
-      }
+      const response = await api.post(`/transforms/${transformId}/execute?limit=1`)
+      const data = response.data
+      const cols: ColumnInfo[] = (data.columns || []).map((col: any) => ({
+        name: typeof col === 'string' ? col : col.name,
+        type: typeof col === 'string' ? 'unknown' : (col.type || 'unknown'),
+        nullable: true
+      }))
+      setJoinTableColumns(cols)
     } catch (error) {
       console.error('Failed to fetch transform columns:', error)
     }
@@ -576,20 +516,13 @@ export function SemanticModels() {
             join_type: newJoin.join_type
           }
 
-      const response = await fetch(`${API_BASE_URL}/models/${editingModel.id}/joins`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-
-      if (response.ok) {
-        const updated = await response.json()
-        setEditingModel(updated)
-        setShowJoinModal(false)
-        setNewJoin({ from_column: '', to_table: '', to_transform_id: '', to_column: '', join_type: 'left' })
-        setJoinTableColumns([])
-        setJoinSourceType('transform')
-      }
+      const response = await api.post(`/models/${editingModel.id}/joins`, body)
+      const updated = response.data
+      setEditingModel(updated)
+      setShowJoinModal(false)
+      setNewJoin({ from_column: '', to_table: '', to_transform_id: '', to_column: '', join_type: 'left' })
+      setJoinTableColumns([])
+      setJoinSourceType('transform')
     } catch (error) {
       console.error('Failed to add join:', error)
     }
@@ -599,14 +532,9 @@ export function SemanticModels() {
     if (!editingModel) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/models/${editingModel.id}/joins/${joinId}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        const updated = await response.json()
-        setEditingModel(updated)
-      }
+      const response = await api.delete(`/models/${editingModel.id}/joins/${joinId}`)
+      const updated = response.data
+      setEditingModel(updated)
     } catch (error) {
       console.error('Failed to remove join:', error)
     }
@@ -640,26 +568,16 @@ export function SemanticModels() {
     setPreviewData(null)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/models/${editingModel.id}/preview`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          measure_ids: previewMeasureIds,
-          dimension_ids: previewDimensionIds,
-          limit: 100
-        })
+      const response = await api.post(`/models/${editingModel.id}/preview`, {
+        measure_ids: previewMeasureIds,
+        dimension_ids: previewDimensionIds,
+        limit: 100
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        setPreviewData(data)
-      } else {
-        const error = await response.json()
-        setPreviewError(error.detail || 'Failed to generate preview')
-      }
-    } catch (error) {
+      const data = response.data
+      setPreviewData(data)
+    } catch (error: any) {
       console.error('Failed to fetch preview:', error)
-      setPreviewError('Failed to fetch preview')
+      setPreviewError(error.response?.data?.detail || 'Failed to fetch preview')
     } finally {
       setPreviewLoading(false)
     }

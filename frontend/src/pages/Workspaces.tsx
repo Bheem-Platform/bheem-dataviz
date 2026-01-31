@@ -36,110 +36,7 @@ import {
   formatMemberJoinDate,
   formatLastAccessed,
 } from '../types/workspace';
-
-// Mock data
-const mockWorkspaces: Workspace[] = [
-  {
-    id: '1',
-    name: 'Marketing Team',
-    slug: 'marketing-team',
-    description: 'Marketing analytics and reporting workspace',
-    owner_id: 'user-1',
-    is_personal: false,
-    is_default: true,
-    primary_color: '#3B82F6',
-    settings: {},
-    is_active: true,
-    member_count: 8,
-    dashboard_count: 12,
-    created_at: '2025-06-01T00:00:00Z',
-    updated_at: '2026-01-30T00:00:00Z',
-  },
-  {
-    id: '2',
-    name: 'Sales Analytics',
-    slug: 'sales-analytics',
-    description: 'Sales performance tracking and forecasting',
-    owner_id: 'user-1',
-    is_personal: false,
-    is_default: false,
-    primary_color: '#10B981',
-    settings: {},
-    is_active: true,
-    member_count: 15,
-    dashboard_count: 8,
-    created_at: '2025-08-15T00:00:00Z',
-    updated_at: '2026-01-28T00:00:00Z',
-  },
-  {
-    id: '3',
-    name: 'Personal Workspace',
-    slug: 'personal',
-    description: 'My personal analytics workspace',
-    owner_id: 'user-1',
-    is_personal: true,
-    is_default: false,
-    settings: {},
-    is_active: true,
-    member_count: 1,
-    dashboard_count: 5,
-    created_at: '2025-01-01T00:00:00Z',
-    updated_at: '2026-01-29T00:00:00Z',
-  },
-];
-
-const mockMembers: WorkspaceMember[] = [
-  {
-    id: 'm1',
-    workspace_id: '1',
-    user_id: 'user-1',
-    role: 'owner',
-    custom_permissions: {},
-    is_active: true,
-    joined_at: '2025-06-01T00:00:00Z',
-    last_accessed_at: '2026-01-30T10:00:00Z',
-    user_email: 'admin@example.com',
-    user_name: 'John Admin',
-  },
-  {
-    id: 'm2',
-    workspace_id: '1',
-    user_id: 'user-2',
-    role: 'admin',
-    custom_permissions: {},
-    is_active: true,
-    joined_at: '2025-06-15T00:00:00Z',
-    last_accessed_at: '2026-01-29T14:00:00Z',
-    user_email: 'jane@example.com',
-    user_name: 'Jane Smith',
-  },
-  {
-    id: 'm3',
-    workspace_id: '1',
-    user_id: 'user-3',
-    role: 'member',
-    custom_permissions: {},
-    is_active: true,
-    joined_at: '2025-07-01T00:00:00Z',
-    last_accessed_at: '2026-01-25T09:00:00Z',
-    user_email: 'bob@example.com',
-    user_name: 'Bob Johnson',
-  },
-];
-
-const mockInvitations: WorkspaceInvitation[] = [
-  {
-    id: 'inv1',
-    workspace_id: '1',
-    email: 'newuser@example.com',
-    role: 'member',
-    status: 'pending',
-    invited_by: 'user-1',
-    inviter_name: 'John Admin',
-    expires_at: '2026-02-07T00:00:00Z',
-    created_at: '2026-01-30T00:00:00Z',
-  },
-];
+import { workspacesApi } from '../lib/api';
 
 const roleIcons: Record<WorkspaceRole, React.ElementType> = {
   owner: Crown,
@@ -149,10 +46,10 @@ const roleIcons: Record<WorkspaceRole, React.ElementType> = {
 };
 
 export function Workspaces() {
-  const [workspaces, setWorkspaces] = useState<Workspace[]>(mockWorkspaces);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
-  const [members, setMembers] = useState<WorkspaceMember[]>(mockMembers);
-  const [invitations, setInvitations] = useState<WorkspaceInvitation[]>(mockInvitations);
+  const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'members' | 'settings'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -162,8 +59,51 @@ export function Workspaces() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<WorkspaceRole>('member');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const currentUserRole: WorkspaceRole = 'owner'; // Mock: current user's role
+  const currentUserRole = 'owner' as WorkspaceRole; // Mock: current user's role
+
+  // Fetch workspaces from API
+  useEffect(() => {
+    const fetchWorkspaces = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await workspacesApi.list();
+        setWorkspaces(response.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch workspaces');
+        console.error('Error fetching workspaces:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchWorkspaces();
+  }, []);
+
+  // Fetch members and invitations when a workspace is selected
+  useEffect(() => {
+    if (!selectedWorkspace) {
+      setMembers([]);
+      setInvitations([]);
+      return;
+    }
+
+    const fetchWorkspaceDetails = async () => {
+      try {
+        const [membersResponse, invitationsResponse] = await Promise.all([
+          workspacesApi.listMembers(selectedWorkspace.id),
+          workspacesApi.listInvitations(selectedWorkspace.id),
+        ]);
+        setMembers(membersResponse.data);
+        setInvitations(invitationsResponse.data);
+      } catch (err) {
+        console.error('Error fetching workspace details:', err);
+      }
+    };
+    fetchWorkspaceDetails();
+  }, [selectedWorkspace]);
 
   const filteredWorkspaces = workspaces.filter(w =>
     w.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -230,7 +170,7 @@ export function Workspaces() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -255,6 +195,28 @@ export function Workspaces() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-red-700 dark:text-red-300">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 text-sm text-red-600 dark:text-red-400 underline hover:no-underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading workspaces...</span>
+          </div>
+        )}
+
+        {!loading && (
         <div className="flex gap-6">
           {/* Sidebar - Workspace List */}
           <div className="w-80 flex-shrink-0">
@@ -556,6 +518,7 @@ export function Workspaces() {
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* Create Workspace Modal */}

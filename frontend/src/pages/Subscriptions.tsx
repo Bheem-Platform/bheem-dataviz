@@ -4,7 +4,7 @@
  * Report and alert subscriptions management.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Bell,
   Mail,
@@ -15,7 +15,9 @@ import {
   Edit2,
   Pause,
   Play,
+  AlertCircle,
 } from 'lucide-react';
+import { subscriptionsApi } from '../lib/api';
 
 interface Subscription {
   id: string;
@@ -29,20 +31,87 @@ interface Subscription {
   nextSend?: string;
 }
 
-const mockSubscriptions: Subscription[] = [
-  { id: '1', name: 'Weekly Sales Report', type: 'report', resource: 'Sales Dashboard', frequency: 'Weekly (Mon 9AM)', recipients: ['team@example.com'], isActive: true, lastSent: '2026-01-27', nextSend: '2026-02-03' },
-  { id: '2', name: 'Daily Revenue Alert', type: 'alert', resource: 'Revenue KPI', frequency: 'Daily (6PM)', recipients: ['manager@example.com', 'cfo@example.com'], isActive: true, lastSent: '2026-01-30', nextSend: '2026-01-31' },
-  { id: '3', name: 'Monthly Executive Summary', type: 'report', resource: 'Executive Dashboard', frequency: 'Monthly (1st day)', recipients: ['executives@example.com'], isActive: false, lastSent: '2026-01-01', nextSend: '2026-02-01' },
-];
-
 export function Subscriptions() {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(mockSubscriptions);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [filter, setFilter] = useState<'all' | 'report' | 'alert'>('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const toggleActive = (id: string) => {
-    setSubscriptions(subs =>
-      subs.map(s => s.id === id ? { ...s, isActive: !s.isActive } : s)
-    );
+  useEffect(() => {
+    const fetchSubscriptions = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch both subscriptions and alerts in parallel
+        const [subscriptionsRes, alertsRes] = await Promise.all([
+          subscriptionsApi.listSubscriptions(),
+          subscriptionsApi.listAlerts(),
+        ]);
+
+        // Transform subscriptions (reports) to match the Subscription interface
+        const reportSubs: Subscription[] = (subscriptionsRes.data || []).map((sub: Record<string, unknown>) => ({
+          id: sub.id as string,
+          name: sub.name as string,
+          type: 'report' as const,
+          resource: (sub.dashboard_id as string) || 'Dashboard',
+          frequency: ((sub.schedule as Record<string, unknown>)?.frequency as string) || 'Unknown',
+          recipients: (sub.recipients as string[]) || [],
+          isActive: sub.enabled as boolean,
+          lastSent: sub.last_sent_at as string | undefined,
+          nextSend: sub.next_run_at as string | undefined,
+        }));
+
+        // Transform alerts to match the Subscription interface
+        const alertSubs: Subscription[] = (alertsRes.data || []).map((alert: Record<string, unknown>) => ({
+          id: alert.id as string,
+          name: alert.name as string,
+          type: 'alert' as const,
+          resource: (alert.target_id as string) || 'Resource',
+          frequency: (alert.evaluation_frequency as string) || 'Unknown',
+          recipients: ((alert.notifications as Array<Record<string, unknown>>) || []).map((n) => n.channel as string),
+          isActive: alert.enabled as boolean,
+          lastSent: alert.last_triggered_at as string | undefined,
+          nextSend: undefined,
+        }));
+
+        setSubscriptions([...reportSubs, ...alertSubs]);
+      } catch (err) {
+        console.error('Failed to fetch subscriptions:', err);
+        setError('Failed to load subscriptions. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubscriptions();
+  }, []);
+
+  const toggleActive = async (id: string) => {
+    const subscription = subscriptions.find(s => s.id === id);
+    if (!subscription) return;
+
+    try {
+      if (subscription.type === 'report') {
+        if (subscription.isActive) {
+          await subscriptionsApi.pauseSubscription(id);
+        } else {
+          await subscriptionsApi.resumeSubscription(id);
+        }
+      } else {
+        if (subscription.isActive) {
+          await subscriptionsApi.pauseAlert(id);
+        } else {
+          await subscriptionsApi.resumeAlert(id);
+        }
+      }
+      setSubscriptions(subs =>
+        subs.map(s => s.id === id ? { ...s, isActive: !s.isActive } : s)
+      );
+    } catch (err) {
+      console.error('Failed to toggle subscription status:', err);
+      setError('Failed to update subscription status.');
+    }
   };
 
   const filteredSubs = subscriptions.filter(s =>
@@ -50,7 +119,7 @@ export function Subscriptions() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -89,8 +158,30 @@ export function Subscriptions() {
           ))}
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+            <p className="text-red-700 dark:text-red-400">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="ml-auto text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-gray-500 dark:text-gray-400">Loading subscriptions...</p>
+          </div>
+        )}
+
         {/* Subscriptions List */}
-        <div className="space-y-4">
+        {!loading && <div className="space-y-4">
           {filteredSubs.map((sub) => (
             <div key={sub.id} className="bg-white dark:bg-gray-800 rounded-lg shadow">
               <div className="p-6">
@@ -159,9 +250,9 @@ export function Subscriptions() {
               </div>
             </div>
           ))}
-        </div>
+        </div>}
 
-        {filteredSubs.length === 0 && (
+        {!loading && filteredSubs.length === 0 && (
           <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
             <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">No subscriptions found</h3>

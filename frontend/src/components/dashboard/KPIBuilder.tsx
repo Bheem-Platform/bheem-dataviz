@@ -11,6 +11,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { KPICard, KPIConfig } from './KPICard'
+import { api } from '../../lib/api'
 
 // Use relative URL to go through Vite proxy in dev, or direct in production
 const API_BASE_URL = '/api/v1'
@@ -122,8 +123,8 @@ export function KPIBuilder({ isOpen, onClose, onSave, initialConfig }: KPIBuilde
 
   const fetchConnections = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/connections/`)
-      if (res.ok) setConnections(await res.json())
+      const res = await api.get('/connections/')
+      setConnections(res.data)
     } catch (e) {
       console.error('Failed to fetch connections:', e)
     }
@@ -131,8 +132,8 @@ export function KPIBuilder({ isOpen, onClose, onSave, initialConfig }: KPIBuilde
 
   const fetchTransforms = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/transforms/`)
-      if (res.ok) setTransforms(await res.json())
+      const res = await api.get('/transforms/')
+      setTransforms(res.data)
     } catch (e) {
       console.error('Failed to fetch transforms:', e)
     }
@@ -140,8 +141,8 @@ export function KPIBuilder({ isOpen, onClose, onSave, initialConfig }: KPIBuilde
 
   const fetchModels = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/models/`)
-      if (res.ok) setModels(await res.json())
+      const res = await api.get('/models/')
+      setModels(res.data)
     } catch (e) {
       console.error('Failed to fetch models:', e)
     }
@@ -150,12 +151,10 @@ export function KPIBuilder({ isOpen, onClose, onSave, initialConfig }: KPIBuilde
   // Fetch full model details (including measures/dimensions)
   const fetchModelDetails = async (modelId: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/models/${modelId}`)
-      if (res.ok) {
-        const fullModel = await res.json()
-        setSelectedModelFull(fullModel)
-        return fullModel
-      }
+      const res = await api.get(`/models/${modelId}`)
+      const fullModel = res.data
+      setSelectedModelFull(fullModel)
+      return fullModel
     } catch (e) {
       console.error('Failed to fetch model details:', e)
     }
@@ -164,11 +163,9 @@ export function KPIBuilder({ isOpen, onClose, onSave, initialConfig }: KPIBuilde
 
   const fetchTables = async (connectionId: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/connections/${connectionId}/tables`)
-      if (res.ok) {
-        const data = await res.json()
-        setTables(data.map((t: any) => ({ name: t.name || t, schema: t.schema || 'public' })))
-      }
+      const res = await api.get(`/connections/${connectionId}/tables`)
+      const data = res.data
+      setTables(data.map((t: any) => ({ name: t.name || t, schema: t.schema || 'public' })))
     } catch (e) {
       console.error('Failed to fetch tables:', e)
     }
@@ -199,21 +196,17 @@ export function KPIBuilder({ isOpen, onClose, onSave, initialConfig }: KPIBuilde
         }
       } else if (sourceType === 'transform' && selectedTransform) {
         // Execute transform with limit 1 to get columns
-        const res = await fetch(`${API_BASE_URL}/transforms/${selectedTransform}/execute?limit=1`, {
-          method: 'POST'
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setColumns(data.columns?.map((c: any) => ({
-            name: typeof c === 'string' ? c : c.name,
-            type: typeof c === 'string' ? 'unknown' : c.type
-          })) || [])
-        }
+        const res = await api.post(`/transforms/${selectedTransform}/execute?limit=1`)
+        const data = res.data
+        setColumns(data.columns?.map((c: any) => ({
+          name: typeof c === 'string' ? c : c.name,
+          type: typeof c === 'string' ? 'unknown' : c.type
+        })) || [])
       } else if (sourceType === 'table' && selectedConnection && selectedTable) {
-        const res = await fetch(
-          `${API_BASE_URL}/connections/${selectedConnection}/tables/public/${selectedTable}/columns`
+        const res = await api.get(
+          `/connections/${selectedConnection}/tables/public/${selectedTable}/columns`
         )
-        if (res.ok) setColumns(await res.json())
+        setColumns(res.data)
       }
     } catch (e) {
       console.error('Failed to fetch columns:', e)

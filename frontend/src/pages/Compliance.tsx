@@ -4,7 +4,7 @@
  * Data governance and compliance management.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Shield,
   FileCheck,
@@ -16,6 +16,7 @@ import {
   Filter,
   Plus,
 } from 'lucide-react';
+import { complianceApi } from '../lib/api';
 
 interface CompliancePolicy {
   id: string;
@@ -36,22 +37,59 @@ interface Violation {
   status: 'open' | 'resolved' | 'dismissed';
 }
 
-const mockPolicies: CompliancePolicy[] = [
-  { id: '1', name: 'Data Retention Policy', type: 'retention', status: 'active', violations: 0, lastChecked: '1 hour ago' },
-  { id: '2', name: 'PII Access Control', type: 'access_control', status: 'active', violations: 2, lastChecked: '30 min ago' },
-  { id: '3', name: 'Export Restrictions', type: 'export', status: 'active', violations: 0, lastChecked: '2 hours ago' },
-  { id: '4', name: 'Data Classification', type: 'classification', status: 'draft', violations: 0, lastChecked: 'Never' },
-];
-
-const mockViolations: Violation[] = [
-  { id: '1', policy: 'PII Access Control', severity: 'high', description: 'Unauthorized access to customer data', resource: 'customers table', detectedAt: '2 hours ago', status: 'open' },
-  { id: '2', policy: 'PII Access Control', severity: 'medium', description: 'Missing data masking on SSN field', resource: 'employees table', detectedAt: '1 day ago', status: 'open' },
-];
-
 export function Compliance() {
-  const [policies] = useState<CompliancePolicy[]>(mockPolicies);
-  const [violations] = useState<Violation[]>(mockViolations);
+  const [policies, setPolicies] = useState<CompliancePolicy[]>([]);
+  const [violations, setViolations] = useState<Violation[]>([]);
   const [activeTab, setActiveTab] = useState<'policies' | 'violations'>('policies');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchComplianceData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [policiesRes, auditLogsRes] = await Promise.all([
+          complianceApi.listRetentionPolicies(),
+          complianceApi.listComplianceAuditLogs(),
+        ]);
+
+        // Transform retention policies to match CompliancePolicy interface
+        const transformedPolicies: CompliancePolicy[] = (policiesRes.data || []).map((policy: any) => ({
+          id: policy.id,
+          name: policy.name,
+          type: policy.data_category || 'retention',
+          status: policy.enabled ? 'active' : 'draft',
+          violations: 0,
+          lastChecked: policy.last_executed ? new Date(policy.last_executed).toLocaleString() : 'Never',
+        }));
+
+        // Transform audit logs to violations (filtering for violation-type events)
+        const transformedViolations: Violation[] = (auditLogsRes.data || [])
+          .filter((log: any) => log.action === 'violation' || log.severity)
+          .map((log: any) => ({
+            id: log.id,
+            policy: log.resource_type || 'Unknown Policy',
+            severity: log.severity || 'medium',
+            description: log.details || log.action || 'Policy violation detected',
+            resource: log.resource_id || 'Unknown resource',
+            detectedAt: log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Unknown',
+            status: log.resolved ? 'resolved' : 'open',
+          }));
+
+        setPolicies(transformedPolicies);
+        setViolations(transformedViolations);
+      } catch (err: any) {
+        console.error('Failed to fetch compliance data:', err);
+        setError(err.response?.data?.detail || err.message || 'Failed to fetch compliance data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchComplianceData();
+  }, []);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -65,8 +103,37 @@ export function Compliance() {
 
   const openViolations = violations.filter(v => v.status === 'open').length;
 
+  if (loading) {
+    return (
+      <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading compliance data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
+          <h2 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">Error Loading Data</h2>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

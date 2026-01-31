@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, CurrentUser
 from app.schemas.workspace import (
     WorkspaceCreate,
     WorkspaceUpdate,
@@ -44,25 +44,25 @@ router = APIRouter()
 
 @router.get("/", response_model=list[WorkspaceSummary])
 async def list_workspaces(
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """List all workspaces the current user is a member of"""
     service = get_workspace_service(db)
-    return await service.list_user_workspaces(current_user.get("user_id"))
+    return await service.list_user_workspaces(current_user.id)
 
 
 @router.post("/", response_model=WorkspaceResponse)
 async def create_workspace(
     data: WorkspaceCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new workspace"""
     service = get_workspace_service(db)
     workspace = await service.create_workspace(
         data=data,
-        owner_id=current_user.get("user_id"),
+        owner_id=current_user.id,
     )
 
     member_count = await service.get_member_count(str(workspace.id))
@@ -88,14 +88,14 @@ async def create_workspace(
 
 @router.get("/personal", response_model=WorkspaceResponse)
 async def get_personal_workspace(
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Get or create the current user's personal workspace"""
     service = get_workspace_service(db)
     workspace = await service.get_or_create_personal_workspace(
-        user_id=current_user.get("user_id"),
-        user_email=current_user.get("email", "user"),
+        user_id=current_user.id,
+        user_email=current_user.email,
     )
 
     member_count = await service.get_member_count(str(workspace.id))
@@ -122,14 +122,14 @@ async def get_personal_workspace(
 @router.get("/{workspace_id}", response_model=WorkspaceResponse)
 async def get_workspace(
     workspace_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Get a workspace by ID"""
     service = get_workspace_service(db)
 
     # Verify membership
-    member = await service.get_member(workspace_id, current_user.get("user_id"))
+    member = await service.get_member(workspace_id, current_user.id)
     if not member:
         raise HTTPException(status_code=403, detail="Not a member of this workspace")
 
@@ -162,7 +162,7 @@ async def get_workspace(
 async def update_workspace(
     workspace_id: str,
     data: WorkspaceUpdate,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Update a workspace"""
@@ -171,12 +171,12 @@ async def update_workspace(
     # Check permission
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.get("user_id"),
+        current_user.id,
         "can_manage_workspace",
     )
     if not has_permission:
         # Allow admin to update non-ownership fields
-        member = await service.get_member(workspace_id, current_user.get("user_id"))
+        member = await service.get_member(workspace_id, current_user.id)
         if not member or member.role.value not in ["owner", "admin"]:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
 
@@ -208,7 +208,7 @@ async def update_workspace(
 @router.delete("/{workspace_id}")
 async def delete_workspace(
     workspace_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a workspace (owner only)"""
@@ -218,7 +218,7 @@ async def delete_workspace(
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
 
-    if str(workspace.owner_id) != current_user.get("user_id"):
+    if str(workspace.owner_id) != current_user.id:
         raise HTTPException(status_code=403, detail="Only the owner can delete a workspace")
 
     try:
@@ -232,7 +232,7 @@ async def delete_workspace(
 async def transfer_ownership(
     workspace_id: str,
     data: TransferOwnership,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Transfer workspace ownership to another member"""
@@ -241,7 +241,7 @@ async def transfer_ownership(
     try:
         await service.transfer_ownership(
             workspace_id=workspace_id,
-            current_owner_id=current_user.get("user_id"),
+            current_owner_id=current_user.id,
             new_owner_id=data.new_owner_id,
         )
         return {"success": True, "message": "Ownership transferred"}
@@ -257,14 +257,14 @@ async def transfer_ownership(
 async def list_members(
     workspace_id: str,
     include_inactive: bool = Query(False),
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """List workspace members"""
     service = get_workspace_service(db)
 
     # Verify membership
-    member = await service.get_member(workspace_id, current_user.get("user_id"))
+    member = await service.get_member(workspace_id, current_user.id)
     if not member:
         raise HTTPException(status_code=403, detail="Not a member of this workspace")
 
@@ -289,7 +289,7 @@ async def list_members(
 async def add_member(
     workspace_id: str,
     data: MemberCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Add a member to a workspace (admin only)"""
@@ -297,7 +297,7 @@ async def add_member(
 
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.get("user_id"),
+        current_user.id,
         "can_manage_members",
     )
     if not has_permission:
@@ -308,7 +308,7 @@ async def add_member(
             workspace_id=workspace_id,
             user_id=data.user_id,
             role=data.role,
-            invited_by=current_user.get("user_id"),
+            invited_by=current_user.id,
         )
 
         return MemberResponse(
@@ -330,7 +330,7 @@ async def update_member(
     workspace_id: str,
     user_id: str,
     data: MemberUpdate,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Update a workspace member"""
@@ -338,7 +338,7 @@ async def update_member(
 
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.get("user_id"),
+        current_user.id,
         "can_manage_members",
     )
     if not has_permission:
@@ -364,17 +364,17 @@ async def update_member(
 async def remove_member(
     workspace_id: str,
     user_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Remove a member from a workspace"""
     service = get_workspace_service(db)
 
     # Allow self-removal or admin removal
-    if user_id != current_user.get("user_id"):
+    if user_id != current_user.id:
         has_permission = await service.check_permission(
             workspace_id,
-            current_user.get("user_id"),
+            current_user.id,
             "can_manage_members",
         )
         if not has_permission:
@@ -396,7 +396,7 @@ async def remove_member(
 async def list_invitations(
     workspace_id: str,
     status: Optional[InviteStatus] = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """List workspace invitations"""
@@ -404,7 +404,7 @@ async def list_invitations(
 
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.get("user_id"),
+        current_user.id,
         "can_manage_members",
     )
     if not has_permission:
@@ -433,7 +433,7 @@ async def list_invitations(
 async def create_invitation(
     workspace_id: str,
     data: InvitationCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a workspace invitation"""
@@ -441,7 +441,7 @@ async def create_invitation(
 
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.get("user_id"),
+        current_user.id,
         "can_manage_members",
     )
     if not has_permission:
@@ -451,7 +451,7 @@ async def create_invitation(
         invitation = await service.create_invitation(
             workspace_id=workspace_id,
             data=data,
-            invited_by=current_user.get("user_id"),
+            invited_by=current_user.id,
         )
 
         return InvitationResponse(
@@ -474,7 +474,7 @@ async def create_invitation(
 async def bulk_invite(
     workspace_id: str,
     data: BulkInvite,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Send bulk invitations"""
@@ -482,7 +482,7 @@ async def bulk_invite(
 
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.get("user_id"),
+        current_user.id,
         "can_manage_members",
     )
     if not has_permission:
@@ -500,7 +500,7 @@ async def bulk_invite(
                     role=data.role,
                     message=data.message,
                 ),
-                invited_by=current_user.get("user_id"),
+                invited_by=current_user.id,
             )
             sent.append(email)
         except ValueError as e:
@@ -517,7 +517,7 @@ async def bulk_invite(
 @router.post("/invitations/accept", response_model=MemberResponse)
 async def accept_invitation(
     data: InvitationAccept,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Accept a workspace invitation"""
@@ -526,7 +526,7 @@ async def accept_invitation(
     try:
         member = await service.accept_invitation(
             token=data.token,
-            user_id=current_user.get("user_id"),
+            user_id=current_user.id,
         )
 
         return MemberResponse(
@@ -546,7 +546,7 @@ async def accept_invitation(
 @router.post("/invitations/decline")
 async def decline_invitation(
     data: InvitationAccept,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Decline a workspace invitation"""
@@ -562,7 +562,7 @@ async def decline_invitation(
 async def cancel_invitation(
     workspace_id: str,
     invitation_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Cancel a pending invitation"""
@@ -570,7 +570,7 @@ async def cancel_invitation(
 
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.get("user_id"),
+        current_user.id,
         "can_manage_members",
     )
     if not has_permission:
@@ -590,7 +590,7 @@ async def cancel_invitation(
 async def check_permission(
     workspace_id: str,
     data: PermissionCheck,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Check if user has permission for an action"""
@@ -598,7 +598,7 @@ async def check_permission(
 
     allowed = await service.check_permission(
         workspace_id=workspace_id,
-        user_id=current_user.get("user_id"),
+        user_id=current_user.id,
         action=data.action,
         object_type=data.object_type,
         object_id=data.object_id,
@@ -611,7 +611,7 @@ async def check_permission(
 async def set_object_permission(
     workspace_id: str,
     data: ObjectPermissionCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Set object-level permissions"""
@@ -619,7 +619,7 @@ async def set_object_permission(
 
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.get("user_id"),
+        current_user.id,
         "can_manage_members",
     )
     if not has_permission:
@@ -629,7 +629,7 @@ async def set_object_permission(
         permission = await service.set_object_permission(
             workspace_id=workspace_id,
             data=data,
-            created_by=current_user.get("user_id"),
+            created_by=current_user.id,
         )
 
         return ObjectPermissionResponse(
@@ -656,7 +656,7 @@ async def set_object_permission(
 
 @router.get("/roles/permissions")
 async def get_role_permissions(
-    current_user: dict = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Get default permissions for each role"""
     return ROLE_PERMISSIONS

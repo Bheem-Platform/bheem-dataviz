@@ -35,10 +35,16 @@ import {
 } from 'lucide-react'
 import { KPIConfig, KPIBuilder } from '@/components/dashboard'
 import ReactECharts from 'echarts-for-react'
+import { api } from '../lib/api'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api/v1`
-  : '/api/v1'
+// Helper to get auth headers for fetch calls
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('access_token')
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
 
 // Widget types
 interface Widget {
@@ -194,28 +200,22 @@ function KPIWidgetCard({ config, onDelete }: { config: KPIConfig; onDelete: () =
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`${API_BASE_URL}/kpi/calculate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          connection_id: config.connectionId,
-          semantic_model_id: config.semanticModelId,
-          transform_id: config.transformId,
-          table_name: config.tableName,
-          schema_name: config.schemaName || 'public',
-          measure_column: config.measureColumn,
-          aggregation: config.aggregation,
-          date_column: config.dateColumn,
-          comparison_period: config.comparisonPeriod || 'previous_month',
-          goal_value: config.goalValue,
-          goal_label: config.goalLabel,
-          include_trend: true,
-          trend_points: 7,
-        }),
+      const response = await api.post('/kpi/calculate', {
+        connection_id: config.connectionId,
+        semantic_model_id: config.semanticModelId,
+        transform_id: config.transformId,
+        table_name: config.tableName,
+        schema_name: config.schemaName || 'public',
+        measure_column: config.measureColumn,
+        aggregation: config.aggregation,
+        date_column: config.dateColumn,
+        comparison_period: config.comparisonPeriod || 'previous_month',
+        goal_value: config.goalValue,
+        goal_label: config.goalLabel,
+        include_trend: true,
+        trend_points: 7,
       })
-
-      if (!response.ok) throw new Error('Failed to load KPI')
-      setData(await response.json())
+      setData(response.data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading KPI')
     } finally {
@@ -340,15 +340,10 @@ function ChartWidgetCard({ chart, onDelete }: { chart: SavedChart; onDelete: () 
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch(`${API_BASE_URL}/charts/${chart.id}/render`)
-        if (!response.ok) {
-          const err = await response.json().catch(() => ({}))
-          throw new Error(err.detail || 'Failed to load chart data')
-        }
-        const data = await response.json()
-        setChartData(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data')
+        const response = await api.get(`/charts/${chart.id}/render`)
+        setChartData(response.data)
+      } catch (err: any) {
+        setError(err.response?.data?.detail || err.message || 'Failed to load data')
       } finally {
         setLoading(false)
       }
@@ -634,8 +629,10 @@ export function DashboardBuilder() {
   const fetchCharts = async () => {
     setPickerLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/dashboards/charts/all`)
-      if (response.ok) setCharts(await response.json())
+      const response = await api.get('/dashboards/charts/all')
+      setCharts(response.data)
+    } catch (e) {
+      console.error('Failed to fetch charts:', e)
     } finally {
       setPickerLoading(false)
     }
@@ -644,8 +641,10 @@ export function DashboardBuilder() {
   const fetchKpis = async () => {
     setPickerLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/kpi/saved`)
-      if (response.ok) setKpis(await response.json())
+      const response = await api.get('/kpi/saved')
+      setKpis(response.data)
+    } catch (e) {
+      console.error('Failed to fetch KPIs:', e)
     } finally {
       setPickerLoading(false)
     }
@@ -654,8 +653,10 @@ export function DashboardBuilder() {
   const fetchModels = async () => {
     setPickerLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/models/`)
-      if (response.ok) setModels(await response.json())
+      const response = await api.get('/models/')
+      setModels(response.data)
+    } catch (e) {
+      console.error('Failed to fetch models:', e)
     } finally {
       setPickerLoading(false)
     }
@@ -664,8 +665,10 @@ export function DashboardBuilder() {
   const fetchTransforms = async () => {
     setPickerLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/transforms/`)
-      if (response.ok) setTransforms(await response.json())
+      const response = await api.get('/transforms/')
+      setTransforms(response.data)
+    } catch (e) {
+      console.error('Failed to fetch transforms:', e)
     } finally {
       setPickerLoading(false)
     }
@@ -674,12 +677,12 @@ export function DashboardBuilder() {
   const loadDashboard = useCallback(async (dashboardId: string) => {
     setLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/dashboards/${dashboardId}`)
-      if (response.ok) {
-        const data: DashboardData = await response.json()
-        setDashboardName(data.name)
-        if (data.layout?.widgets) setWidgets(data.layout.widgets)
-      }
+      const response = await api.get(`/dashboards/${dashboardId}`)
+      const data: DashboardData = response.data
+      setDashboardName(data.name)
+      if (data.layout?.widgets) setWidgets(data.layout.widgets)
+    } catch (e) {
+      console.error('Failed to load dashboard:', e)
     } finally {
       setLoading(false)
     }
@@ -695,20 +698,16 @@ export function DashboardBuilder() {
     try {
       const body = { name: dashboardName.trim() || 'Untitled Dashboard', layout: { widgets } }
       const response = dashboardId
-        ? await fetch(`${API_BASE_URL}/dashboards/${dashboardId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        : await fetch(`${API_BASE_URL}/dashboards/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        ? await api.patch(`/dashboards/${dashboardId}`, body)
+        : await api.post('/dashboards/', body)
 
-      if (response.ok) {
-        const saved = await response.json()
-        if (!dashboardId) {
-          setDashboardId(saved.id)
-          navigate(`/dashboards/${saved.id}`, { replace: true })
-        }
-        setSaveStatus('success')
-        setTimeout(() => setSaveStatus('idle'), 2000)
-      } else {
-        setSaveStatus('error')
+      const saved = response.data
+      if (!dashboardId) {
+        setDashboardId(saved.id)
+        navigate(`/dashboards/${saved.id}`, { replace: true })
       }
+      setSaveStatus('success')
+      setTimeout(() => setSaveStatus('idle'), 2000)
     } catch {
       setSaveStatus('error')
     } finally {

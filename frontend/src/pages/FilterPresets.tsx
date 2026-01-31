@@ -21,7 +21,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { SavedFilterPreset, FilterCondition, SlicerConfig } from '../types/filters';
-import api from '../lib/api';
+import api, { filtersApi } from '../lib/api';
 import { cn } from '../lib/utils';
 
 interface FilterPresetFormData {
@@ -47,6 +47,7 @@ const FilterPresets: React.FC = () => {
   });
   const [dashboards, setDashboards] = useState<{ id: string; name: string }[]>([]);
   const [charts, setCharts] = useState<{ id: string; name: string }[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch presets
   useEffect(() => {
@@ -57,11 +58,13 @@ const FilterPresets: React.FC = () => {
 
   const fetchPresets = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const response = await api.get('/api/v1/filters/presets');
+      const response = await api.get('/filters/presets');
       setPresets(response.data.presets || response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch presets:', error);
+    } catch (err) {
+      console.error('Failed to fetch presets:', err);
+      setError('Failed to load filter presets. Please try again.');
       setPresets([]);
     } finally {
       setIsLoading(false);
@@ -70,7 +73,7 @@ const FilterPresets: React.FC = () => {
 
   const fetchDashboards = async () => {
     try {
-      const response = await api.get('/api/v1/dashboards');
+      const response = await api.get('/dashboards');
       setDashboards(response.data.dashboards || response.data || []);
     } catch (error) {
       console.error('Failed to fetch dashboards:', error);
@@ -79,7 +82,7 @@ const FilterPresets: React.FC = () => {
 
   const fetchCharts = async () => {
     try {
-      const response = await api.get('/api/v1/charts');
+      const response = await api.get('/charts');
       setCharts(response.data.charts || response.data || []);
     } catch (error) {
       console.error('Failed to fetch charts:', error);
@@ -99,7 +102,7 @@ const FilterPresets: React.FC = () => {
   // Create preset
   const handleCreate = async () => {
     try {
-      await api.post('/api/v1/filters/presets', {
+      await api.post('/filters/presets', {
         ...formData,
         filters: [],
         slicers: [],
@@ -116,7 +119,7 @@ const FilterPresets: React.FC = () => {
   const handleUpdate = async () => {
     if (!selectedPreset) return;
     try {
-      await api.patch(`/api/v1/filters/presets/${selectedPreset.id}`, formData);
+      await api.patch(`/filters/presets/${selectedPreset.id}`, formData);
       setIsEditModalOpen(false);
       resetForm();
       fetchPresets();
@@ -129,7 +132,7 @@ const FilterPresets: React.FC = () => {
   const handleDelete = async () => {
     if (!selectedPreset) return;
     try {
-      await api.delete(`/api/v1/filters/presets/${selectedPreset.id}`);
+      await api.delete(`/filters/presets/${selectedPreset.id}`);
       setIsDeleteModalOpen(false);
       setSelectedPreset(null);
       fetchPresets();
@@ -141,7 +144,7 @@ const FilterPresets: React.FC = () => {
   // Duplicate preset
   const handleDuplicate = async (preset: SavedFilterPreset) => {
     try {
-      await api.post('/api/v1/filters/presets', {
+      await api.post('/filters/presets', {
         name: `${preset.name} (Copy)`,
         description: preset.description,
         dashboardId: preset.dashboardId,
@@ -159,7 +162,7 @@ const FilterPresets: React.FC = () => {
   // Toggle default
   const handleToggleDefault = async (preset: SavedFilterPreset) => {
     try {
-      await api.patch(`/api/v1/filters/presets/${preset.id}`, {
+      await api.patch(`/filters/presets/${preset.id}`, {
         isDefault: !preset.isDefault,
       });
       fetchPresets();
@@ -213,7 +216,7 @@ const FilterPresets: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-full overflow-auto bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -256,12 +259,25 @@ const FilterPresets: React.FC = () => {
           </div>
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700">{error}</p>
+            <button
+              onClick={fetchPresets}
+              className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
         {/* Presets Grid */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
-        ) : filteredPresets.length === 0 ? (
+        ) : error ? null : filteredPresets.length === 0 ? (
           <div className="text-center py-12">
             <Filter className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-1">

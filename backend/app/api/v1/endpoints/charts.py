@@ -14,7 +14,6 @@ from app.models.dashboard import SavedChart as SavedChartModel
 from app.models.connection import Connection as ConnectionModel, ConnectionType
 from app.models.semantic import SemanticModel, Dimension, Measure
 from app.models.transform import TransformRecipe
-from app.models.user import User
 from app.schemas.dashboard import SavedChart, SavedChartCreate, SavedChartUpdate
 from app.services.postgres_service import postgres_service
 from app.services.mysql_service import MySQLService
@@ -22,7 +21,7 @@ from app.services.mongodb_service import mongodb_service
 from app.services.encryption_service import encryption_service
 from app.services.transform_service import get_transform_service
 from app.core.config import settings
-from app.core.security import get_current_user
+from app.core.security import get_current_user, CurrentUser
 from pydantic import BaseModel
 import uuid as uuid_module
 
@@ -421,7 +420,7 @@ async def list_charts(
     limit: int = 50,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """List all saved charts."""
     result = await db.execute(
@@ -437,7 +436,7 @@ async def list_charts(
 async def create_chart(
     chart: SavedChartCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Create a new chart."""
     db_chart = SavedChartModel(**chart.model_dump())
@@ -451,7 +450,7 @@ async def create_chart(
 async def get_chart(
     chart_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Get a chart by ID."""
     result = await db.execute(
@@ -475,7 +474,7 @@ async def update_chart(
     chart_id: UUID,
     chart_update: SavedChartUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Update a chart."""
     result = await db.execute(
@@ -499,7 +498,7 @@ async def update_chart(
 async def delete_chart(
     chart_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Delete a chart."""
     result = await db.execute(
@@ -523,7 +522,7 @@ async def render_chart(
     limit: int = 1000,
     db: AsyncSession = Depends(get_db),
     filters: Optional[List[Dict[str, Any]]] = None,
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """
     Render a chart by executing its query and returning data.
@@ -689,6 +688,9 @@ async def render_chart(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
+        print(f"Chart render error: {str(e)}\n{error_traceback}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to render chart: {str(e)}"
@@ -700,7 +702,7 @@ async def render_chart_with_filters(
     chart_id: UUID,
     request: ChartRenderRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """
     Render a chart with additional filters applied.
@@ -743,7 +745,7 @@ class FilterValuesResponse(BaseModel):
 async def get_chart_filter_options(
     chart_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """
     Get available filter columns and their distinct values for a chart.
@@ -865,7 +867,7 @@ async def get_chart_filter_options(
 async def toggle_favorite(
     chart_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Toggle favorite status of a chart."""
     result = await db.execute(

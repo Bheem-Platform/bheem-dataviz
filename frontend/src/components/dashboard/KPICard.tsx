@@ -10,6 +10,7 @@ import {
   Settings,
   MoreHorizontal
 } from 'lucide-react'
+import { api } from '../../lib/api'
 
 // Use relative URL to go through Vite proxy in dev
 const API_BASE_URL = '/api/v1'
@@ -179,35 +180,24 @@ export function KPICard({
     setError(null)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/kpi/calculate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          connection_id: config.connectionId,
-          semantic_model_id: config.semanticModelId,
-          transform_id: config.transformId,
-          table_name: config.tableName,
-          schema_name: config.schemaName || 'public',
-          measure_column: config.measureColumn,
-          aggregation: config.aggregation,
-          date_column: config.dateColumn,
-          comparison_period: config.comparisonPeriod || 'previous_month',
-          goal_value: config.goalValue,
-          goal_label: config.goalLabel,
-          include_trend: true,
-          trend_points: 7
-        })
+      const response = await api.post('/kpi/calculate', {
+        connection_id: config.connectionId,
+        semantic_model_id: config.semanticModelId,
+        transform_id: config.transformId,
+        table_name: config.tableName,
+        schema_name: config.schemaName || 'public',
+        measure_column: config.measureColumn,
+        aggregation: config.aggregation,
+        date_column: config.dateColumn,
+        comparison_period: config.comparisonPeriod || 'previous_month',
+        goal_value: config.goalValue,
+        goal_label: config.goalLabel,
+        include_trend: true,
+        trend_points: 7
       })
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        throw new Error(err.detail || 'Failed to load KPI')
-      }
-
-      const result = await response.json()
-      setData(result)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load KPI')
+      setData(response.data)
+    } catch (err: any) {
+      setError(err.response?.data?.detail || err.message || 'Failed to load KPI')
     } finally {
       setLoading(false)
     }

@@ -7,9 +7,8 @@ from app.services.postgres_service import postgres_service
 from app.services.mysql_service import MySQLService
 from app.services.encryption_service import encryption_service
 from app.models.connection import Connection as ConnectionModel, ConnectionType
-from app.models.user import User
 from app.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, CurrentUser
 
 router = APIRouter()
 
@@ -36,7 +35,7 @@ async def _get_connection_string(conn: ConnectionModel) -> str:
 async def execute_query(
     query: QueryExecute,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Execute a SQL query on a connected database."""
     # Get connection from database
@@ -99,7 +98,7 @@ async def execute_query(
 async def preview_query(
     query: QueryExecute,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Preview a SQL query (same as execute but with smaller limit)."""
     query.limit = min(query.limit or 100, 100)
@@ -108,7 +107,7 @@ async def preview_query(
 
 @router.get("/saved")
 async def list_saved_queries(
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """List all saved queries."""
     return list(saved_queries.values())
@@ -117,7 +116,7 @@ async def list_saved_queries(
 @router.post("/saved")
 async def save_query(
     query: QueryExecute,
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Save a query for later use."""
     query_id = str(len(saved_queries) + 1)

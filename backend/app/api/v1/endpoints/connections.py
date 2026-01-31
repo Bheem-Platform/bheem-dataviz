@@ -21,7 +21,6 @@ from app.schemas.connection import (
     ColumnConfig
 )
 from app.models.connection import Connection as ConnectionModel, ConnectionType, ConnectionStatus
-from app.models.user import User
 from app.services.postgres_service import postgres_service
 from app.services.mysql_service import mysql_service
 from app.services.mongodb_service import mongodb_service
@@ -29,7 +28,7 @@ from app.services.encryption_service import encryption_service
 from app.services.file_service import file_service
 from app.database import get_db
 from app.core.config import settings
-from app.core.security import get_current_user
+from app.core.security import get_current_user, CurrentUser
 
 router = APIRouter()
 
@@ -98,7 +97,7 @@ def _model_to_response(conn: ConnectionModel) -> ConnectionResponse:
 @router.get("/", response_model=List[ConnectionResponse])
 async def list_connections(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """List all saved connections."""
     result = await db.execute(select(ConnectionModel).order_by(ConnectionModel.created_at.desc()))
@@ -110,7 +109,7 @@ async def list_connections(
 async def create_connection(
     connection: ConnectionCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Create a new database connection."""
     conn_data = connection.model_dump()
@@ -190,7 +189,7 @@ async def upload_preview(
     delimiter: str = Form(','),
     has_header: bool = Form(True),
     sheet_name: Optional[str] = Form(None),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """
     Upload a CSV or Excel file and get a preview of the data.
@@ -242,7 +241,7 @@ async def upload_preview(
 async def upload_confirm(
     request: FileUploadConfirmRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """
     Confirm file upload: create connection and data table.
@@ -314,7 +313,7 @@ async def upload_confirm(
 async def get_connection(
     connection_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Get a specific connection by ID."""
     result = await db.execute(
@@ -333,7 +332,7 @@ async def update_connection(
     connection_id: str,
     update_data: ConnectionUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Update a connection."""
     result = await db.execute(
@@ -372,7 +371,7 @@ async def update_connection(
 async def delete_connection(
     connection_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Delete a connection. For CSV/Excel connections, also drops the data table."""
     try:
@@ -448,7 +447,7 @@ async def _get_connection_string(conn: ConnectionModel) -> str:
 async def test_saved_connection(
     connection_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Test a saved connection."""
     result = await db.execute(
@@ -536,7 +535,7 @@ async def test_saved_connection(
 @router.post("/test", response_model=ConnectionTestResponse)
 async def test_connection(
     request: ConnectionTestRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Test a connection without saving it (for connection form validation)."""
     try:
@@ -623,7 +622,7 @@ async def test_connection(
 async def get_tables(
     connection_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Get list of tables for a connection, sorted by importance (FK references)."""
     result = await db.execute(
@@ -726,7 +725,7 @@ async def get_table_columns(
     schema_name: str,
     table_name: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Get column information for a specific table."""
     result = await db.execute(
@@ -814,7 +813,7 @@ async def get_table_preview(
     limit: int = 100,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """Get a preview of table data with pagination support."""
     result = await db.execute(

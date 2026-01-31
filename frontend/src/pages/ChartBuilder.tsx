@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { api } from '../lib/api'
 import {
   Database,
   Table2,
@@ -44,9 +45,7 @@ import {
 } from 'lucide-react'
 import ReactECharts from 'echarts-for-react'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api/v1`
-  : '/api/v1'
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
 
 interface Connection {
   id: string
@@ -1993,31 +1992,19 @@ export function ChartBuilder() {
     setViewingChartData(null)
     try {
       // Fetch chart metadata
-      const response = await fetch(`${API_BASE_URL}/dashboards/charts/${id}`)
-      if (response.ok) {
-        const chart = await response.json()
-        console.log('Fetched chart:', chart)
-        setViewingChart(chart)
+      const response = await api.get(`/dashboards/charts/${id}`)
+      const chart = response.data
+      console.log('Fetched chart:', chart)
+      setViewingChart(chart)
 
-        // Fetch live data from render endpoint
-        try {
-          const renderResponse = await fetch(`${API_BASE_URL}/charts/${id}/render`)
-          if (renderResponse.ok) {
-            const renderData = await renderResponse.json()
-            console.log('Rendered chart data:', renderData)
-            setViewingChartData(renderData)
-          } else {
-            const err = await renderResponse.json().catch(() => ({}))
-            console.error('Failed to render chart:', err)
-            setViewingChartError(err.detail || 'Failed to load chart data')
-          }
-        } catch (renderError) {
-          console.error('Failed to fetch render data:', renderError)
-          setViewingChartError('Failed to load chart data')
-        }
-      } else {
-        console.error('Chart not found')
-        setViewingChart(null)
+      // Fetch live data from render endpoint
+      try {
+        const renderResponse = await api.get(`/charts/${id}/render`)
+        console.log('Rendered chart data:', renderResponse.data)
+        setViewingChartData(renderResponse.data)
+      } catch (renderError: any) {
+        console.error('Failed to render chart:', renderError)
+        setViewingChartError(renderError.response?.data?.detail || 'Failed to load chart data')
       }
     } catch (error) {
       console.error('Failed to fetch chart:', error)
@@ -2031,12 +2018,8 @@ export function ChartBuilder() {
     if (!confirm('Are you sure you want to delete this chart?')) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/dashboards/charts/${id}`, {
-        method: 'DELETE'
-      })
-      if (response.ok) {
-        navigate('/charts/new')
-      }
+      await api.delete(`/dashboards/charts/${id}`)
+      navigate('/charts/new')
     } catch (error) {
       console.error('Failed to delete chart:', error)
     }
@@ -2044,13 +2027,8 @@ export function ChartBuilder() {
 
   const toggleFavorite = async (chart: SavedChart) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/dashboards/charts/${chart.id}/favorite`, {
-        method: 'POST'
-      })
-      if (response.ok) {
-        const updated = await response.json()
-        setViewingChart(updated)
-      }
+      const response = await api.post(`/dashboards/charts/${chart.id}/favorite`)
+      setViewingChart(response.data)
     } catch (error) {
       console.error('Failed to toggle favorite:', error)
     }
@@ -2060,38 +2038,28 @@ export function ChartBuilder() {
     setLoading(true)
     try {
       // Fetch all connections first
-      const connectionsRes = await fetch(`${API_BASE_URL}/connections/`)
-      if (connectionsRes.ok) {
-        const connectionsData = await connectionsRes.json()
-        const connMap = new Map<string, Connection>()
-        connectionsData.forEach((c: Connection) => connMap.set(c.id, c))
-        setConnections(connMap)
-      }
+      const connectionsRes = await api.get('/connections/')
+      const connectionsData = connectionsRes.data
+      const connMap = new Map<string, Connection>()
+      connectionsData.forEach((c: Connection) => connMap.set(c.id, c))
+      setConnections(connMap)
 
       // Fetch all transform recipes
-      const recipesRes = await fetch(`${API_BASE_URL}/transforms/`)
-      if (recipesRes.ok) {
-        const recipesData = await recipesRes.json()
-        setTransformRecipes(recipesData)
-        // Fetch previews for each recipe
-        recipesData.forEach((recipe: TransformRecipe) => {
-          fetchRecipePreview(recipe)
-        })
-      }
+      const recipesRes = await api.get('/transforms/')
+      const recipesData = recipesRes.data
+      setTransformRecipes(recipesData)
+      // Fetch previews for each recipe
+      recipesData.forEach((recipe: TransformRecipe) => {
+        fetchRecipePreview(recipe)
+      })
 
       // Fetch all semantic models
-      const modelsRes = await fetch(`${API_BASE_URL}/models/`)
-      if (modelsRes.ok) {
-        const modelsData = await modelsRes.json()
-        setSemanticModels(modelsData)
-      }
+      const modelsRes = await api.get('/models/')
+      setSemanticModels(modelsRes.data)
 
       // Fetch all saved charts
-      const chartsRes = await fetch(`${API_BASE_URL}/dashboards/charts/all`)
-      if (chartsRes.ok) {
-        const chartsData = await chartsRes.json()
-        setSavedCharts(chartsData)
-      }
+      const chartsRes = await api.get('/dashboards/charts/all')
+      setSavedCharts(chartsRes.data)
     } catch (error) {
       console.error('Failed to fetch data:', error)
     } finally {
@@ -2107,13 +2075,9 @@ export function ChartBuilder() {
     })
 
     try {
-      const response = await fetch(`${API_BASE_URL}/transforms/${recipe.id}/execute?preview=true&limit=50`, {
-        method: 'POST',
-      })
+      const response = await api.post(`/transforms/${recipe.id}/execute?preview=true&limit=50`)
 
-      if (!response.ok) throw new Error('Failed to execute transform')
-
-      const result = await response.json()
+      const result = response.data
       const cols: ColumnInfo[] = result.columns.map((c: any) => ({
         name: c.name,
         type: c.type || 'text',
@@ -2153,13 +2117,9 @@ export function ChartBuilder() {
     setSelectedChart(null)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/transforms/${recipe.id}/execute?preview=true&limit=500`, {
-        method: 'POST',
-      })
+      const response = await api.post(`/transforms/${recipe.id}/execute?preview=true&limit=500`)
 
-      if (!response.ok) throw new Error('Failed to execute transform')
-
-      const result = await response.json()
+      const result = response.data
       const cols: ColumnInfo[] = result.columns.map((c: any) => ({
         name: c.name,
         type: c.type || 'text',
@@ -2210,10 +2170,8 @@ export function ChartBuilder() {
 
     try {
       // Fetch full model details
-      const response = await fetch(`${API_BASE_URL}/models/${modelSummary.id}`)
-      if (!response.ok) throw new Error('Failed to fetch model')
-
-      const model: SemanticModel = await response.json()
+      const response = await api.get(`/models/${modelSummary.id}`)
+      const model: SemanticModel = response.data
       setSelectedModel(model)
 
       // Auto-select first measure and dimension if available
@@ -2257,23 +2215,13 @@ export function ChartBuilder() {
 
       // Use the backend's model preview endpoint - it handles both table and transform-based models
       console.log('Executing model preview:', { modelId: model.id, measureIds, dimensionIds })
-      const queryResponse = await fetch(`${API_BASE_URL}/models/${model.id}/preview`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          measure_ids: measureIds,
-          dimension_ids: dimensionIds,
-          limit: 500
-        })
+      const queryResponse = await api.post(`/models/${model.id}/preview`, {
+        measure_ids: measureIds,
+        dimension_ids: dimensionIds,
+        limit: 500
       })
 
-      if (!queryResponse.ok) {
-        const errorText = await queryResponse.text()
-        console.error('Model preview failed:', errorText)
-        throw new Error('Query execution failed')
-      }
-
-      const result = await queryResponse.json()
+      const result = queryResponse.data
       console.log('Model preview result:', result)
 
       // Handle columns - can be array of strings or array of objects
@@ -2343,10 +2291,8 @@ export function ChartBuilder() {
   const fetchDashboards = async () => {
     try {
       setDashboardsLoading(true)
-      const response = await fetch(`${API_BASE_URL}/dashboards/`)
-      if (response.ok) {
-        setDashboards(await response.json())
-      }
+      const response = await api.get('/dashboards/')
+      setDashboards(response.data)
     } catch (error) {
       console.error('Failed to fetch dashboards:', error)
     } finally {
@@ -2386,18 +2332,12 @@ export function ChartBuilder() {
       let dashboardId = selectedDashboardId
 
       if (createNewDashboard && newDashboardName.trim()) {
-        const dashboardRes = await fetch(`${API_BASE_URL}/dashboards/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: newDashboardName.trim(),
-            description: `Created from Chart Builder`,
-          }),
+        const dashboardRes = await api.post('/dashboards/', {
+          name: newDashboardName.trim(),
+          description: `Created from Chart Builder`,
         })
 
-        if (!dashboardRes.ok) throw new Error('Failed to create dashboard')
-        const newDashboard = await dashboardRes.json()
-        dashboardId = newDashboard.id
+        dashboardId = dashboardRes.data.id
       }
 
       let chartPayload: any
@@ -2478,13 +2418,7 @@ export function ChartBuilder() {
         console.log('tableRows count:', (chartConfig as any)?.tableRows?.length)
       }
 
-      const chartRes = await fetch(`${API_BASE_URL}/dashboards/charts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(chartPayload),
-      })
-
-      if (!chartRes.ok) throw new Error('Failed to save chart')
+      await api.post('/dashboards/charts', chartPayload)
 
       setSaveSuccess(true)
       setTimeout(() => closeSaveModal(), 1500)

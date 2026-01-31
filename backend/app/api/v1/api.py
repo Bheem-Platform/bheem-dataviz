@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import connections, datasets, dashboards, charts, queries, ai, auth, transforms, semantic_models, kpi, quickcharts, filters, drill, conditional_format, time_intelligence, rls, schedule, kodee, insights, cloud_connectors, workspaces, audit, embed, advanced_charts, subscriptions, reports, mobile, collaboration, sharing, shortcuts, search, sdk, plugins, theming, integrations, caching, query_optimization, background_jobs, performance_monitoring, workspace_management, user_management, billing, admin_dashboard, two_factor_auth, security_controls, compliance, security_audit, export, report_templates, scheduled_reports, report_subscriptions
+from app.api.v1.endpoints import connections, datasets, dashboards, charts, queries, ai, auth, transforms, semantic_models, kpi, quickcharts, filters, drill, conditional_format, time_intelligence, rls, schedule, kodee, insights, cloud_connectors, workspaces, audit, embed, advanced_charts, subscriptions, reports, mobile, collaboration, sharing, shortcuts, search, sdk, plugins, theming, integrations, caching, query_optimization, background_jobs, performance_monitoring, workspace_management, user_management, billing, admin_dashboard, two_factor_auth, security_controls, compliance, security_audit, export, report_templates, scheduled_reports, report_subscriptions, profiler
 
 api_router = APIRouter()
 
@@ -54,3 +54,4 @@ api_router.include_router(export.router, prefix="/export", tags=["export"])
 api_router.include_router(report_templates.router, prefix="/report-templates", tags=["report-templates"])
 api_router.include_router(scheduled_reports.router, prefix="/scheduled-reports", tags=["scheduled-reports"])
 api_router.include_router(report_subscriptions.router, prefix="/subscriptions", tags=["report-subscriptions"])
+api_router.include_router(profiler.router, prefix="/profiler", tags=["data-profiler"])

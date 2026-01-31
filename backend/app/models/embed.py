@@ -64,9 +64,9 @@ class EmbedToken(Base):
     revoked_at = Column(DateTime(timezone=True), nullable=True)
     revoked_by = Column(UUID(as_uuid=True), nullable=True)
 
-    # Settings and extra data
+    # Settings and metadata
     settings = Column(JSONB, default={})
-    extra_data = Column(JSONB, default={})
+    extra_metadata = Column("metadata", JSONB, default={})
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
@@ -115,7 +115,7 @@ class EmbedSession(Base):
     duration_seconds = Column(Integer, nullable=True)
 
     # Context
-    extra_data = Column(JSONB, default={})
+    extra_metadata = Column("metadata", JSONB, default={})
 
     __table_args__ = (
         Index('ix_embed_sessions_token_started', token_id, started_at),

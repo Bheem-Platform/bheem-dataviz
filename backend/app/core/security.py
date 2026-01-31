@@ -1,22 +1,34 @@
 """
 JWT Security utilities for local token verification.
 Uses PyJWT for HS256 JWT verification without calling Passport on every request.
+User data comes from BheemPassport/ERP - no local users table needed.
 """
 import jwt
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from pydantic import BaseModel
 
 from app.core.config import settings
-from app.database import get_db
-from app.models.user import User
 
 
 # Security scheme for Bearer token
 security = HTTPBearer(auto_error=False)
+
+
+class CurrentUser(BaseModel):
+    """User data extracted from JWT token. No local DB needed."""
+    id: str
+    email: str
+    name: Optional[str] = None
+    role: str = "user"
+    company_code: str
+    company_name: Optional[str] = None
+    companies: list[str] = []
+
+    class Config:
+        from_attributes = True
 
 
 class TokenData:
@@ -31,6 +43,7 @@ class TokenData:
         name: Optional[str] = None,
         role: Optional[str] = None,
         company_name: Optional[str] = None,
+        companies: list[str] = None,
     ):
         self.user_id = user_id
         self.email = email
@@ -39,6 +52,7 @@ class TokenData:
         self.name = name
         self.role = role
         self.company_name = company_name
+        self.companies = companies or []
 
 
 def verify_token(token: str) -> TokenData:
@@ -64,7 +78,7 @@ def verify_token(token: str) -> TokenData:
         )
 
         # Extract user information from payload
-        # Bheem Passport JWT structure: user_id, email, company_code, exp, name, role
+        # Bheem Passport JWT structure: user_id, username, role, company_code, companies, exp
         user_id = payload.get("user_id") or payload.get("sub")
         email = payload.get("email") or payload.get("username")
         company_code = payload.get("company_code", settings.COMPANY_CODE)
@@ -89,6 +103,7 @@ def verify_token(token: str) -> TokenData:
             name=payload.get("name"),
             role=payload.get("role"),
             company_name=payload.get("company_name"),
+            companies=payload.get("companies", []),
         )
 
     except jwt.ExpiredSignatureError:
@@ -107,20 +122,17 @@ def verify_token(token: str) -> TokenData:
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: AsyncSession = Depends(get_db)
-) -> User:
+) -> CurrentUser:
     """
-    FastAPI dependency to get the current authenticated user.
+    FastAPI dependency to get the current authenticated user from JWT.
 
-    Extracts and verifies the JWT token from the Authorization header,
-    then retrieves or creates the corresponding local user.
+    User data comes from BheemPassport/ERP - no local database query needed.
 
     Args:
         credentials: HTTP Bearer credentials from Authorization header
-        db: Database session
 
     Returns:
-        User object for the authenticated user
+        CurrentUser object with user data from token
 
     Raises:
         HTTPException: If no token provided or token is invalid
@@ -132,40 +144,23 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Verify token locally
+    # Verify token locally and extract user data
     token_data = verify_token(credentials.credentials)
 
-    # Look up local user by passport_user_id
-    result = await db.execute(
-        select(User).where(User.passport_user_id == token_data.user_id)
+    return CurrentUser(
+        id=token_data.user_id,
+        email=token_data.email,
+        name=token_data.name or token_data.email.split("@")[0],
+        role=token_data.role or "user",
+        company_code=token_data.company_code,
+        company_name=token_data.company_name,
+        companies=token_data.companies,
     )
-    user = result.scalar_one_or_none()
-
-    if not user:
-        # User not found locally - they need to sync first via /auth/sync
-        # However, for better UX, we can auto-create the user here
-        from app.models.user import UserRole, UserStatus
-
-        user = User(
-            passport_user_id=token_data.user_id,
-            name=token_data.name or "Unknown",
-            email=token_data.email,
-            role=UserRole.USER,
-            status=UserStatus.ACTIVE,
-            company_code=token_data.company_code,
-            company_name=token_data.company_name,
-        )
-        db.add(user)
-        await db.commit()
-        await db.refresh(user)
-
-    return user
 
 
 async def get_current_user_optional(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: AsyncSession = Depends(get_db)
-) -> Optional[User]:
+) -> Optional[CurrentUser]:
     """
     Optional version of get_current_user that returns None if not authenticated.
     Useful for endpoints that work with or without authentication.
@@ -174,7 +169,7 @@ async def get_current_user_optional(
         return None
 
     try:
-        return await get_current_user(credentials, db)
+        return await get_current_user(credentials)
     except HTTPException:
         return None
 

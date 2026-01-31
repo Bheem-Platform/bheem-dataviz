@@ -4,14 +4,13 @@
  * Analyze and profile datasets for quality and statistics.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   BarChart2,
   Database,
   FileSpreadsheet,
   Search,
   RefreshCw,
-  Download,
   AlertTriangle,
   CheckCircle,
   Info,
@@ -19,11 +18,20 @@ import {
   Type,
   Calendar,
   ToggleLeft,
+  Loader2,
 } from 'lucide-react';
+import { profilerApi } from '@/lib/api';
+
+interface TopValue {
+  value: string;
+  count: number;
+  percent: number;
+}
 
 interface ColumnProfile {
   name: string;
   data_type: string;
+  sql_type: string;
   null_count: number;
   null_percent: number;
   unique_count: number;
@@ -33,113 +41,130 @@ interface ColumnProfile {
   mean?: number;
   median?: number;
   std_dev?: number;
-  top_values: Array<{ value: string; count: number; percent: number }>;
+  top_values: TopValue[];
 }
 
 interface DatasetProfile {
+  connection_id: string;
   connection_name: string;
+  schema_name: string;
   table_name: string;
   row_count: number;
   column_count: number;
   columns: ColumnProfile[];
   profiled_at: string;
   quality_score: number;
+  has_temporal: boolean;
+  has_numeric: boolean;
+  has_categorical: boolean;
 }
 
-// Mock data
-const mockProfile: DatasetProfile = {
-  connection_name: 'Sales Database',
-  table_name: 'orders',
-  row_count: 125000,
-  column_count: 12,
-  profiled_at: '2026-01-30T10:00:00Z',
-  quality_score: 87,
-  columns: [
-    {
-      name: 'order_id',
-      data_type: 'integer',
-      null_count: 0,
-      null_percent: 0,
-      unique_count: 125000,
-      unique_percent: 100,
-      min_value: '1',
-      max_value: '125000',
-      top_values: [],
-    },
-    {
-      name: 'customer_name',
-      data_type: 'string',
-      null_count: 150,
-      null_percent: 0.12,
-      unique_count: 45000,
-      unique_percent: 36,
-      top_values: [
-        { value: 'John Smith', count: 45, percent: 0.036 },
-        { value: 'Jane Doe', count: 38, percent: 0.030 },
-        { value: 'Bob Wilson', count: 32, percent: 0.026 },
-      ],
-    },
-    {
-      name: 'order_date',
-      data_type: 'date',
-      null_count: 0,
-      null_percent: 0,
-      unique_count: 730,
-      unique_percent: 0.58,
-      min_value: '2024-01-01',
-      max_value: '2026-01-30',
-      top_values: [],
-    },
-    {
-      name: 'total_amount',
-      data_type: 'decimal',
-      null_count: 25,
-      null_percent: 0.02,
-      unique_count: 8500,
-      unique_percent: 6.8,
-      min_value: '5.00',
-      max_value: '15000.00',
-      mean: 245.50,
-      median: 125.00,
-      std_dev: 312.45,
-      top_values: [],
-    },
-    {
-      name: 'status',
-      data_type: 'string',
-      null_count: 0,
-      null_percent: 0,
-      unique_count: 4,
-      unique_percent: 0.003,
-      top_values: [
-        { value: 'completed', count: 95000, percent: 76 },
-        { value: 'pending', count: 20000, percent: 16 },
-        { value: 'cancelled', count: 8000, percent: 6.4 },
-        { value: 'refunded', count: 2000, percent: 1.6 },
-      ],
-    },
-  ],
-};
+interface Connection {
+  id: string;
+  name: string;
+  type: string;
+  database: string;
+}
+
+interface Table {
+  schema_name: string;
+  table_name: string;
+  row_count: number | null;
+  column_count: number;
+}
 
 const dataTypeIcons: Record<string, React.ElementType> = {
-  integer: Hash,
-  decimal: Hash,
-  string: Type,
-  date: Calendar,
+  numeric: Hash,
+  temporal: Calendar,
+  categorical: Type,
   boolean: ToggleLeft,
+  text: Type,
+  unknown: Info,
 };
 
 export function DataProfiler() {
-  const [profile, setProfile] = useState<DatasetProfile | null>(mockProfile);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [tables, setTables] = useState<Table[]>([]);
+  const [profile, setProfile] = useState<DatasetProfile | null>(null);
   const [selectedConnection, setSelectedConnection] = useState<string>('');
   const [selectedTable, setSelectedTable] = useState<string>('');
+  const [selectedSchema, setSelectedSchema] = useState<string>('');
   const [isProfiling, setIsProfiling] = useState(false);
+  const [isLoadingConnections, setIsLoadingConnections] = useState(true);
+  const [isLoadingTables, setIsLoadingTables] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  // Load connections on mount
+  useEffect(() => {
+    loadConnections();
+  }, []);
+
+  // Load tables when connection changes
+  useEffect(() => {
+    if (selectedConnection) {
+      loadTables(selectedConnection);
+      setProfile(null);
+      setSelectedTable('');
+      setSelectedSchema('');
+    }
+  }, [selectedConnection]);
+
+  const loadConnections = async () => {
+    setIsLoadingConnections(true);
+    setError(null);
+    try {
+      const response = await profilerApi.getConnections();
+      setConnections(response.data);
+    } catch (err: any) {
+      setError('Failed to load connections');
+      console.error('Failed to load connections:', err);
+    } finally {
+      setIsLoadingConnections(false);
+    }
+  };
+
+  const loadTables = async (connectionId: string) => {
+    setIsLoadingTables(true);
+    setError(null);
+    try {
+      const response = await profilerApi.getTables(connectionId);
+      setTables(response.data);
+    } catch (err: any) {
+      setError('Failed to load tables');
+      console.error('Failed to load tables:', err);
+    } finally {
+      setIsLoadingTables(false);
+    }
+  };
 
   const handleRunProfile = async () => {
+    if (!selectedConnection || !selectedTable || !selectedSchema) {
+      setError('Please select a connection and table');
+      return;
+    }
+
     setIsProfiling(true);
-    await new Promise(r => setTimeout(r, 2000));
-    setIsProfiling(false);
+    setError(null);
+    try {
+      const response = await profilerApi.profileTable(
+        selectedConnection,
+        selectedSchema,
+        selectedTable
+      );
+      setProfile(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to profile table');
+      console.error('Failed to profile table:', err);
+    } finally {
+      setIsProfiling(false);
+    }
+  };
+
+  const handleTableSelect = (value: string) => {
+    const [schema, table] = value.split('.');
+    setSelectedSchema(schema);
+    setSelectedTable(table);
   };
 
   const getQualityColor = (score: number) => {
@@ -168,10 +193,14 @@ export function DataProfiler() {
             </div>
             <button
               onClick={handleRunProfile}
-              disabled={isProfiling}
+              disabled={isProfiling || !selectedConnection || !selectedTable}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
             >
-              <RefreshCw className={`w-4 h-4 ${isProfiling ? 'animate-spin' : ''}`} />
+              {isProfiling ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
               {isProfiling ? 'Profiling...' : 'Run Profile'}
             </button>
           </div>
@@ -181,23 +210,40 @@ export function DataProfiler() {
             <select
               value={selectedConnection}
               onChange={(e) => setSelectedConnection(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              disabled={isLoadingConnections}
+              className="px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white min-w-[200px]"
             >
-              <option value="">Select Connection</option>
-              <option value="conn-1">Sales Database</option>
-              <option value="conn-2">Marketing Data</option>
+              <option value="">
+                {isLoadingConnections ? 'Loading...' : 'Select Connection'}
+              </option>
+              {connections.map((conn) => (
+                <option key={conn.id} value={conn.id}>
+                  {conn.name} ({conn.type})
+                </option>
+              ))}
             </select>
             <select
-              value={selectedTable}
-              onChange={(e) => setSelectedTable(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value={selectedSchema && selectedTable ? `${selectedSchema}.${selectedTable}` : ''}
+              onChange={(e) => handleTableSelect(e.target.value)}
+              disabled={isLoadingTables || !selectedConnection}
+              className="px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white min-w-[200px]"
             >
-              <option value="">Select Table</option>
-              <option value="orders">orders</option>
-              <option value="customers">customers</option>
-              <option value="products">products</option>
+              <option value="">
+                {isLoadingTables ? 'Loading...' : 'Select Table'}
+              </option>
+              {tables.map((t) => (
+                <option key={`${t.schema_name}.${t.table_name}`} value={`${t.schema_name}.${t.table_name}`}>
+                  {t.schema_name}.{t.table_name} {t.row_count ? `(${t.row_count.toLocaleString()} rows)` : ''}
+                </option>
+              ))}
             </select>
           </div>
+
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
+              {error}
+            </div>
+          )}
         </div>
       </div>
 
@@ -252,6 +298,25 @@ export function DataProfiler() {
             </div>
           </div>
 
+          {/* Data Type Summary */}
+          <div className="mb-6 flex gap-4">
+            {profile.has_temporal && (
+              <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full text-sm">
+                Has Temporal Data
+              </span>
+            )}
+            {profile.has_numeric && (
+              <span className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full text-sm">
+                Has Numeric Data
+              </span>
+            )}
+            {profile.has_categorical && (
+              <span className="px-3 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-full text-sm">
+                Has Categorical Data
+              </span>
+            )}
+          </div>
+
           {/* Search */}
           <div className="mb-4">
             <div className="relative max-w-md">
@@ -285,7 +350,7 @@ export function DataProfiler() {
                             {column.name}
                           </h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {column.data_type}
+                            {column.sql_type} ({column.data_type})
                           </p>
                         </div>
                       </div>
@@ -326,7 +391,7 @@ export function DataProfiler() {
                           </span>
                         </div>
                       )}
-                      {column.mean !== undefined && (
+                      {column.mean !== undefined && column.mean !== null && (
                         <div>
                           <span className="text-gray-500 dark:text-gray-400">Mean:</span>
                           <span className="ml-2 font-medium text-gray-900 dark:text-white">
@@ -334,7 +399,7 @@ export function DataProfiler() {
                           </span>
                         </div>
                       )}
-                      {column.std_dev !== undefined && (
+                      {column.std_dev !== undefined && column.std_dev !== null && (
                         <div>
                           <span className="text-gray-500 dark:text-gray-400">Std Dev:</span>
                           <span className="ml-2 font-medium text-gray-900 dark:text-white">
@@ -344,7 +409,7 @@ export function DataProfiler() {
                       )}
                     </div>
 
-                    {column.top_values.length > 0 && (
+                    {column.top_values && column.top_values.length > 0 && (
                       <div className="mt-4">
                         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Top Values
@@ -377,7 +442,7 @@ export function DataProfiler() {
         </div>
       )}
 
-      {!profile && (
+      {!profile && !isProfiling && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center bg-white dark:bg-gray-800 rounded-lg shadow p-12">
             <BarChart2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -386,6 +451,20 @@ export function DataProfiler() {
             </h3>
             <p className="mt-1 text-gray-500 dark:text-gray-400">
               Choose a connection and table to profile
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isProfiling && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center bg-white dark:bg-gray-800 rounded-lg shadow p-12">
+            <Loader2 className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-spin" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              Profiling table...
+            </h3>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">
+              Analyzing {selectedSchema}.{selectedTable}
             </p>
           </div>
         </div>

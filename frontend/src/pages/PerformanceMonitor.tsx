@@ -4,7 +4,7 @@
  * System performance monitoring and optimization.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Activity,
   Clock,
@@ -15,6 +15,7 @@ import {
   Zap,
   RefreshCw,
 } from 'lucide-react';
+import { performanceMonitoringApi } from '../lib/api';
 
 interface PerformanceMetric {
   name: string;
@@ -32,29 +33,133 @@ interface SlowQuery {
   lastSeen: string;
 }
 
-const mockMetrics: PerformanceMetric[] = [
-  { name: 'Avg Query Time', value: 245, unit: 'ms', trend: 'down', status: 'good' },
-  { name: 'Cache Hit Rate', value: 87.3, unit: '%', trend: 'up', status: 'good' },
-  { name: 'Active Connections', value: 12, unit: '', trend: 'stable', status: 'good' },
-  { name: 'Queue Depth', value: 3, unit: '', trend: 'up', status: 'warning' },
-  { name: 'Error Rate', value: 0.2, unit: '%', trend: 'down', status: 'good' },
-  { name: 'Memory Usage', value: 68, unit: '%', trend: 'up', status: 'warning' },
-];
-
-const mockSlowQueries: SlowQuery[] = [
-  { id: '1', query: 'SELECT * FROM orders JOIN customers...', executionTime: 2340, occurrences: 45, lastSeen: '5 min ago' },
-  { id: '2', query: 'SELECT COUNT(*) FROM transactions...', executionTime: 1850, occurrences: 23, lastSeen: '12 min ago' },
-  { id: '3', query: 'SELECT SUM(amount) FROM payments...', executionTime: 1560, occurrences: 18, lastSeen: '30 min ago' },
-];
-
 export function PerformanceMonitor() {
-  const [metrics] = useState<PerformanceMetric[]>(mockMetrics);
-  const [slowQueries] = useState<SlowQuery[]>(mockSlowQueries);
+  const [metrics, setMetrics] = useState<PerformanceMetric[]>([]);
+  const [slowQueries, setSlowQueries] = useState<SlowQuery[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPerformanceData = async () => {
+    try {
+      setError(null);
+      const [systemResponse, requestResponse, cacheResponse, dbResponse] = await Promise.all([
+        performanceMonitoringApi.getSystemMetrics(),
+        performanceMonitoringApi.getRequestMetrics(),
+        performanceMonitoringApi.getCacheMetrics(),
+        performanceMonitoringApi.getDatabaseMetrics(),
+      ]);
+
+      // Transform API responses into PerformanceMetric format
+      const transformedMetrics: PerformanceMetric[] = [];
+
+      // System metrics
+      if (systemResponse.data) {
+        const sys = systemResponse.data;
+        if (sys.memory_percent !== undefined) {
+          transformedMetrics.push({
+            name: 'Memory Usage',
+            value: Math.round(sys.memory_percent * 10) / 10,
+            unit: '%',
+            trend: sys.memory_percent > 80 ? 'up' : 'stable',
+            status: sys.memory_percent > 90 ? 'critical' : sys.memory_percent > 70 ? 'warning' : 'good',
+          });
+        }
+        if (sys.cpu_percent !== undefined) {
+          transformedMetrics.push({
+            name: 'CPU Usage',
+            value: Math.round(sys.cpu_percent * 10) / 10,
+            unit: '%',
+            trend: 'stable',
+            status: sys.cpu_percent > 90 ? 'critical' : sys.cpu_percent > 70 ? 'warning' : 'good',
+          });
+        }
+      }
+
+      // Request metrics
+      if (requestResponse.data) {
+        const req = requestResponse.data;
+        if (req.avg_latency_ms !== undefined) {
+          transformedMetrics.push({
+            name: 'Avg Query Time',
+            value: Math.round(req.avg_latency_ms),
+            unit: 'ms',
+            trend: 'stable',
+            status: req.avg_latency_ms > 1000 ? 'critical' : req.avg_latency_ms > 500 ? 'warning' : 'good',
+          });
+        }
+        if (req.error_rate !== undefined) {
+          transformedMetrics.push({
+            name: 'Error Rate',
+            value: Math.round(req.error_rate * 100) / 100,
+            unit: '%',
+            trend: req.error_rate > 1 ? 'up' : 'down',
+            status: req.error_rate > 5 ? 'critical' : req.error_rate > 1 ? 'warning' : 'good',
+          });
+        }
+      }
+
+      // Cache metrics
+      if (cacheResponse.data) {
+        const cache = cacheResponse.data;
+        if (cache.hit_rate !== undefined) {
+          transformedMetrics.push({
+            name: 'Cache Hit Rate',
+            value: Math.round(cache.hit_rate * 10) / 10,
+            unit: '%',
+            trend: cache.hit_rate > 80 ? 'up' : 'down',
+            status: cache.hit_rate < 50 ? 'critical' : cache.hit_rate < 70 ? 'warning' : 'good',
+          });
+        }
+      }
+
+      // Database metrics
+      if (dbResponse.data) {
+        const db = dbResponse.data;
+        if (db.active_connections !== undefined) {
+          transformedMetrics.push({
+            name: 'Active Connections',
+            value: db.active_connections,
+            unit: '',
+            trend: 'stable',
+            status: db.active_connections > 100 ? 'warning' : 'good',
+          });
+        }
+        // Extract slow queries if available
+        if (db.slow_queries && Array.isArray(db.slow_queries)) {
+          const transformedQueries: SlowQuery[] = db.slow_queries.map((q: {
+            id?: string;
+            query?: string;
+            execution_time?: number;
+            occurrences?: number;
+            last_seen?: string;
+          }, index: number) => ({
+            id: q.id || String(index + 1),
+            query: q.query || 'Unknown query',
+            executionTime: q.execution_time || 0,
+            occurrences: q.occurrences || 1,
+            lastSeen: q.last_seen || 'Unknown',
+          }));
+          setSlowQueries(transformedQueries);
+        }
+      }
+
+      setMetrics(transformedMetrics);
+    } catch (err) {
+      console.error('Failed to fetch performance data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch performance data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPerformanceData();
+  }, []);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await new Promise(r => setTimeout(r, 1000));
+    await fetchPerformanceData();
     setIsRefreshing(false);
   };
 
@@ -75,8 +180,37 @@ export function PerformanceMonitor() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600" />
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Loading performance data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="w-12 h-12 mx-auto text-red-500" />
+          <h2 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">Error Loading Data</h2>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">{error}</p>
+          <button
+            onClick={handleRefresh}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

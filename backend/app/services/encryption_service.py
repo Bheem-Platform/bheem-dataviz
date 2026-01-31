@@ -33,9 +33,15 @@ class EncryptionService:
         """Decrypt a base64-encoded ciphertext and return plaintext."""
         if not ciphertext:
             return ""
-        fernet = self._get_fernet()
-        decrypted = fernet.decrypt(ciphertext.encode())
-        return decrypted.decode()
+        try:
+            fernet = self._get_fernet()
+            decrypted = fernet.decrypt(ciphertext.encode())
+            return decrypted.decode()
+        except Exception as e:
+            # If decryption fails (e.g., wrong SECRET_KEY), log warning and return empty
+            # This allows connections to work if they don't require a password
+            print(f"Warning: Failed to decrypt password (likely SECRET_KEY mismatch): {str(e)}")
+            return ""
 
 
 # Singleton instance
