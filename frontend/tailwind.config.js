@@ -32,6 +32,26 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
+      boxShadow: {
+        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+        'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+        'glow-primary': '0 0 20px rgba(102, 126, 234, 0.3)',
+        'glow-primary-lg': '0 0 30px rgba(102, 126, 234, 0.4)',
+      },
+      animation: {
+        'fade-up': 'fadeUp 0.3s ease-out forwards',
+        'scale-in': 'scaleIn 0.2s ease-out forwards',
+      },
+      keyframes: {
+        fadeUp: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        scaleIn: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+      },
     },
   },
   plugins: [],

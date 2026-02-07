@@ -92,8 +92,8 @@ class WorkspaceMember(Base):
     workspace_id = Column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
-    # Role
-    role = Column(SQLEnum(WorkspaceRole, name='workspace_role', create_type=False), nullable=False, default=WorkspaceRole.MEMBER)
+    # Role - use String with PostgreSQL enum through type cast
+    role = Column(String(20), nullable=False, default='member')
 
     # Permissions overrides (if different from role defaults)
     custom_permissions = Column(JSONB, default={})
@@ -136,7 +136,7 @@ class WorkspaceInvitation(Base):
 
     # Invitation details
     email = Column(String(255), nullable=False)
-    role = Column(SQLEnum(WorkspaceRole, name='workspace_role', create_type=False), nullable=False, default=WorkspaceRole.MEMBER)
+    role = Column(String(20), nullable=False, default='member')
 
     # Token for accepting invitation
     token = Column(String(255), unique=True, nullable=False, index=True)
@@ -145,7 +145,7 @@ class WorkspaceInvitation(Base):
     invited_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
     # Status
-    status = Column(SQLEnum(InviteStatus, name='invite_status', create_type=False), default=InviteStatus.PENDING)
+    status = Column(String(20), default='pending')
 
     # Message
     message = Column(Text, nullable=True)
@@ -185,7 +185,7 @@ class ObjectPermission(Base):
 
     # Permission target (user or role)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
-    role = Column(SQLEnum(WorkspaceRole, name='workspace_role', create_type=False), nullable=True)
+    role = Column(String(20), nullable=True)
 
     # Permissions
     can_view = Column(Boolean, default=True)

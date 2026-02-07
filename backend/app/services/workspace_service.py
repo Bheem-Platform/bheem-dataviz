@@ -18,9 +18,8 @@ from app.models.workspace import (
     WorkspaceMember,
     WorkspaceInvitation,
     ObjectPermission,
-    WorkspaceRole as ModelWorkspaceRole,
-    InviteStatus as ModelInviteStatus,
 )
+from app.models.user import User
 from app.schemas.workspace import (
     WorkspaceCreate,
     WorkspaceUpdate,
@@ -46,6 +45,65 @@ class WorkspaceService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    # ========================================================================
+    # USER MANAGEMENT (for foreign key compliance)
+    # ========================================================================
+
+    async def get_or_create_local_user(
+        self,
+        passport_user_id: str,
+        email: str,
+        name: Optional[str] = None,
+        role: Optional[str] = None,
+        company_code: Optional[str] = None,
+        company_name: Optional[str] = None,
+    ) -> User:
+        """
+        Find or create a local user record based on BheemPassport user data.
+        This is needed because workspace tables have foreign key constraints to users.id.
+        """
+        # Check if user exists by passport_user_id
+        result = await self.db.execute(
+            select(User).where(User.passport_user_id == passport_user_id)
+        )
+        user = result.scalar_one_or_none()
+
+        if user:
+            return user
+
+        # Map role to simple string
+        user_role = "user"
+        if role:
+            role_lower = role.lower()
+            if role_lower in ["admin", "superadmin"]:
+                user_role = "admin"
+            elif role_lower == "viewer":
+                user_role = "viewer"
+
+        user = User(
+            passport_user_id=passport_user_id,
+            email=email,
+            full_name=name or email.split("@")[0],
+            role=user_role,
+            status="active",
+            company_code=company_code or "DEFAULT",
+        )
+
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        logger.info(f"Created local user record for passport user {passport_user_id}")
+        return user
+
+    async def get_local_user_id(self, passport_user_id: str) -> Optional[str]:
+        """Get the local user ID from passport user ID"""
+        result = await self.db.execute(
+            select(User.id).where(User.passport_user_id == passport_user_id)
+        )
+        user_id = result.scalar_one_or_none()
+        return str(user_id) if user_id else None
 
     # ========================================================================
     # WORKSPACE CRUD
@@ -83,7 +141,7 @@ class WorkspaceService:
         member = WorkspaceMember(
             workspace_id=workspace.id,
             user_id=owner_id,
-            role=ModelWorkspaceRole.OWNER,
+            role='owner',
             joined_at=datetime.utcnow(),
         )
         self.db.add(member)
@@ -160,13 +218,15 @@ class WorkspaceService:
 
         workspaces = []
         for workspace, role in result.all():
+            # role is now a string from database, not an enum
+            role_str = role.value if hasattr(role, 'value') else role
             workspaces.append(WorkspaceSummary(
                 id=str(workspace.id),
                 name=workspace.name,
                 slug=workspace.slug,
                 is_personal=workspace.is_personal,
                 is_default=workspace.is_default,
-                role=WorkspaceRole(role.value),
+                role=WorkspaceRole(role_str),
                 logo_url=workspace.logo_url,
                 primary_color=workspace.primary_color,
             ))
@@ -218,7 +278,7 @@ class WorkspaceService:
         member = WorkspaceMember(
             workspace_id=workspace_id,
             user_id=user_id,
-            role=ModelWorkspaceRole(role.value),
+            role=role.value if hasattr(role, 'value') else role,
             invited_by=invited_by,
             invited_at=datetime.utcnow() if invited_by else None,
             joined_at=datetime.utcnow(),
@@ -264,7 +324,7 @@ class WorkspaceService:
         if "role" in update_data:
             role_value = update_data.pop("role")
             if role_value:
-                member.role = ModelWorkspaceRole(role_value.value)
+                member.role = role_value.value if hasattr(role_value, 'value') else role_value
 
         for field, value in update_data.items():
             setattr(member, field, value)
@@ -286,7 +346,7 @@ class WorkspaceService:
             return False
 
         # Prevent removing the owner
-        if member.role == ModelWorkspaceRole.OWNER:
+        if member.role == 'owner':
             raise ValueError("Cannot remove workspace owner. Transfer ownership first.")
 
         await self.db.delete(member)
@@ -297,17 +357,19 @@ class WorkspaceService:
         self,
         workspace_id: str,
         include_inactive: bool = False,
-    ) -> list[WorkspaceMember]:
-        """List all members of a workspace"""
-        query = select(WorkspaceMember).where(
-            WorkspaceMember.workspace_id == workspace_id
+    ) -> list[tuple]:
+        """List all members of a workspace with user details"""
+        query = (
+            select(WorkspaceMember, User)
+            .join(User, WorkspaceMember.user_id == User.id)
+            .where(WorkspaceMember.workspace_id == workspace_id)
         )
 
         if not include_inactive:
             query = query.where(WorkspaceMember.is_active == True)
 
         result = await self.db.execute(query.order_by(WorkspaceMember.joined_at))
-        return list(result.scalars().all())
+        return list(result.all())
 
     async def get_member_count(self, workspace_id: str) -> int:
         """Get count of active members"""
@@ -347,9 +409,9 @@ class WorkspaceService:
         # Update roles
         current_owner_member = await self.get_member(workspace_id, current_owner_id)
         if current_owner_member:
-            current_owner_member.role = ModelWorkspaceRole.ADMIN
+            current_owner_member.role = 'admin'
 
-        new_owner_member.role = ModelWorkspaceRole.OWNER
+        new_owner_member.role = 'owner'
 
         await self.db.commit()
         return True
@@ -372,7 +434,7 @@ class WorkspaceService:
                 and_(
                     WorkspaceInvitation.workspace_id == workspace_id,
                     WorkspaceInvitation.email == data.email,
-                    WorkspaceInvitation.status == ModelInviteStatus.PENDING,
+                    WorkspaceInvitation.status == 'pending',
                 )
             )
         )
@@ -385,7 +447,7 @@ class WorkspaceService:
         invitation = WorkspaceInvitation(
             workspace_id=workspace_id,
             email=data.email,
-            role=ModelWorkspaceRole(data.role.value),
+            role=data.role.value if hasattr(data.role, 'value') else data.role,
             token=token,
             invited_by=invited_by,
             message=data.message,
@@ -417,11 +479,11 @@ class WorkspaceService:
         if not invitation:
             raise ValueError("Invalid invitation token")
 
-        if invitation.status != ModelInviteStatus.PENDING:
-            raise ValueError(f"Invitation is {invitation.status.value}")
+        if invitation.status != 'pending':
+            raise ValueError(f"Invitation is {invitation.status}")
 
         if invitation.expires_at < datetime.utcnow():
-            invitation.status = ModelInviteStatus.EXPIRED
+            invitation.status = 'expired'
             await self.db.commit()
             raise ValueError("Invitation has expired")
 
@@ -429,12 +491,12 @@ class WorkspaceService:
         member = await self.add_member(
             workspace_id=str(invitation.workspace_id),
             user_id=user_id,
-            role=WorkspaceRole(invitation.role.value),
+            role=WorkspaceRole(invitation.role if isinstance(invitation.role, str) else invitation.role.value),
             invited_by=str(invitation.invited_by),
         )
 
         # Update invitation status
-        invitation.status = ModelInviteStatus.ACCEPTED
+        invitation.status = 'accepted'
         invitation.accepted_at = datetime.utcnow()
         await self.db.commit()
 
@@ -446,10 +508,10 @@ class WorkspaceService:
         if not invitation:
             return False
 
-        if invitation.status != ModelInviteStatus.PENDING:
+        if invitation.status != 'pending':
             return False
 
-        invitation.status = ModelInviteStatus.DECLINED
+        invitation.status = 'declined'
         await self.db.commit()
         return True
 
@@ -465,7 +527,7 @@ class WorkspaceService:
 
         if status:
             query = query.where(
-                WorkspaceInvitation.status == ModelInviteStatus(status.value)
+                WorkspaceInvitation.status == (status.value if hasattr(status, 'value') else status)
             )
 
         result = await self.db.execute(query.order_by(WorkspaceInvitation.created_at.desc()))
@@ -478,7 +540,7 @@ class WorkspaceService:
         )
         invitation = result.scalar_one_or_none()
 
-        if not invitation or invitation.status != ModelInviteStatus.PENDING:
+        if not invitation or invitation.status != 'pending':
             return False
 
         await self.db.delete(invitation)
@@ -502,7 +564,7 @@ class WorkspaceService:
         if not member or not member.is_active:
             return False
 
-        role = WorkspaceRole(member.role.value)
+        role = WorkspaceRole(member.role if isinstance(member.role, str) else member.role.value)
 
         # Check custom permissions first
         if member.custom_permissions and action in member.custom_permissions:
@@ -546,7 +608,7 @@ class WorkspaceService:
                     ObjectPermission.object_id == object_id,
                     or_(
                         ObjectPermission.user_id == user_id,
-                        ObjectPermission.role == ModelWorkspaceRole(role.value),
+                        ObjectPermission.role == (role.value if hasattr(role, 'value') else role),
                     )
                 )
             )
@@ -576,7 +638,7 @@ class WorkspaceService:
         if data.user_id:
             query = query.where(ObjectPermission.user_id == data.user_id)
         else:
-            query = query.where(ObjectPermission.role == ModelWorkspaceRole(data.role.value))
+            query = query.where(ObjectPermission.role == (data.role.value if hasattr(data.role, 'value') else data.role))
 
         result = await self.db.execute(query)
         existing = result.scalar_one_or_none()
@@ -598,7 +660,7 @@ class WorkspaceService:
             object_type=data.object_type,
             object_id=data.object_id,
             user_id=data.user_id,
-            role=ModelWorkspaceRole(data.role.value) if data.role else None,
+            role=(data.role.value if hasattr(data.role, 'value') else data.role) if data.role else None,
             can_view=data.can_view,
             can_edit=data.can_edit,
             can_delete=data.can_delete,

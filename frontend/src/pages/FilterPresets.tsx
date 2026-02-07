@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Filter,
   Plus,
@@ -19,8 +20,12 @@ import {
   Calendar,
   LayoutDashboard,
   BarChart3,
+  Play,
+  ExternalLink,
+  X,
+  PlusCircle,
 } from 'lucide-react';
-import { SavedFilterPreset, FilterCondition, SlicerConfig } from '../types/filters';
+import { SavedFilterPreset, FilterCondition, SlicerConfig, FilterOperator } from '../types/filters';
 import api, { filtersApi } from '../lib/api';
 import { cn } from '../lib/utils';
 
@@ -30,9 +35,28 @@ interface FilterPresetFormData {
   dashboardId?: string;
   chartId?: string;
   isDefault: boolean;
+  filters: FilterCondition[];
 }
 
+const FILTER_OPERATORS: { value: FilterOperator; label: string }[] = [
+  { value: '=', label: 'Equals' },
+  { value: '!=', label: 'Not Equals' },
+  { value: '>', label: 'Greater Than' },
+  { value: '>=', label: 'Greater Than or Equal' },
+  { value: '<', label: 'Less Than' },
+  { value: '<=', label: 'Less Than or Equal' },
+  { value: 'contains', label: 'Contains' },
+  { value: 'starts_with', label: 'Starts With' },
+  { value: 'ends_with', label: 'Ends With' },
+  { value: 'in', label: 'In List' },
+  { value: 'not_in', label: 'Not In List' },
+  { value: 'between', label: 'Between' },
+  { value: 'is_null', label: 'Is Empty' },
+  { value: 'is_not_null', label: 'Is Not Empty' },
+];
+
 const FilterPresets: React.FC = () => {
+  const navigate = useNavigate();
   const [presets, setPresets] = useState<SavedFilterPreset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,6 +68,7 @@ const FilterPresets: React.FC = () => {
     name: '',
     description: '',
     isDefault: false,
+    filters: [],
   });
   const [dashboards, setDashboards] = useState<{ id: string; name: string }[]>([]);
   const [charts, setCharts] = useState<{ id: string; name: string }[]>([]);
@@ -61,7 +86,23 @@ const FilterPresets: React.FC = () => {
     setError(null);
     try {
       const response = await api.get('/filters/presets');
-      setPresets(response.data.presets || response.data || []);
+      const data = response.data;
+      // API returns array of presets - convert snake_case to camelCase
+      const presetsList = Array.isArray(data) ? data : (data.presets || []);
+      const convertedPresets = presetsList.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        dashboardId: p.dashboard_id,
+        chartId: p.chart_id,
+        filters: p.filters || [],
+        slicers: p.slicers || [],
+        isDefault: p.is_default,
+        createdBy: p.created_by,
+        createdAt: p.created_at,
+        updatedAt: p.updated_at,
+      }));
+      setPresets(convertedPresets);
     } catch (err) {
       console.error('Failed to fetch presets:', err);
       setError('Failed to load filter presets. Please try again.');
@@ -73,19 +114,25 @@ const FilterPresets: React.FC = () => {
 
   const fetchDashboards = async () => {
     try {
-      const response = await api.get('/dashboards');
-      setDashboards(response.data.dashboards || response.data || []);
+      const response = await api.get('/dashboards/');
+      const data = response.data;
+      // API returns array of dashboard summaries
+      setDashboards(Array.isArray(data) ? data.map((d: any) => ({ id: d.id, name: d.name })) : []);
     } catch (error) {
       console.error('Failed to fetch dashboards:', error);
+      setDashboards([]);
     }
   };
 
   const fetchCharts = async () => {
     try {
-      const response = await api.get('/charts');
-      setCharts(response.data.charts || response.data || []);
+      const response = await api.get('/charts/');
+      const data = response.data;
+      // API returns array of charts
+      setCharts(Array.isArray(data) ? data.map((c: any) => ({ id: c.id, name: c.name || c.title })) : []);
     } catch (error) {
       console.error('Failed to fetch charts:', error);
+      setCharts([]);
     }
   };
 
@@ -103,9 +150,16 @@ const FilterPresets: React.FC = () => {
   const handleCreate = async () => {
     try {
       await api.post('/filters/presets', {
-        ...formData,
-        filters: [],
+        name: formData.name,
+        description: formData.description,
+        is_default: formData.isDefault,
+        filters: formData.filters.filter(f => f.column), // Only include filters with column set
         slicers: [],
+      }, {
+        params: {
+          dashboard_id: formData.dashboardId || undefined,
+          chart_id: formData.chartId || undefined,
+        }
       });
       setIsCreateModalOpen(false);
       resetForm();
@@ -119,7 +173,13 @@ const FilterPresets: React.FC = () => {
   const handleUpdate = async () => {
     if (!selectedPreset) return;
     try {
-      await api.patch(`/filters/presets/${selectedPreset.id}`, formData);
+      await api.put(`/filters/presets/${selectedPreset.id}`, {
+        name: formData.name,
+        description: formData.description,
+        is_default: formData.isDefault,
+        filters: formData.filters.filter(f => f.column), // Only include filters with column set
+        slicers: selectedPreset.slicers || [],
+      });
       setIsEditModalOpen(false);
       resetForm();
       fetchPresets();
@@ -147,11 +207,14 @@ const FilterPresets: React.FC = () => {
       await api.post('/filters/presets', {
         name: `${preset.name} (Copy)`,
         description: preset.description,
-        dashboardId: preset.dashboardId,
-        chartId: preset.chartId,
-        filters: preset.filters,
-        slicers: preset.slicers,
-        isDefault: false,
+        filters: preset.filters || [],
+        slicers: preset.slicers || [],
+        is_default: false,
+      }, {
+        params: {
+          dashboard_id: preset.dashboardId || undefined,
+          chart_id: preset.chartId || undefined,
+        }
       });
       fetchPresets();
     } catch (error) {
@@ -162,12 +225,30 @@ const FilterPresets: React.FC = () => {
   // Toggle default
   const handleToggleDefault = async (preset: SavedFilterPreset) => {
     try {
-      await api.patch(`/filters/presets/${preset.id}`, {
-        isDefault: !preset.isDefault,
+      await api.put(`/filters/presets/${preset.id}`, {
+        name: preset.name,
+        description: preset.description,
+        is_default: !preset.isDefault,
+        filters: preset.filters || [],
+        slicers: preset.slicers || [],
       });
       fetchPresets();
     } catch (error) {
       console.error('Failed to toggle default:', error);
+    }
+  };
+
+  // Apply preset - navigate to dashboard with filters
+  const handleApplyPreset = (preset: SavedFilterPreset) => {
+    if (preset.dashboardId) {
+      // Navigate to dashboard with preset filters
+      navigate(`/dashboards/${preset.dashboardId}?preset=${preset.id}`);
+    } else if (preset.chartId) {
+      // Navigate to chart builder with preset filters
+      navigate(`/charts/${preset.chartId}?preset=${preset.id}`);
+    } else {
+      // Show message that preset is not associated with a dashboard/chart
+      alert('This preset is not associated with a dashboard or chart. Edit the preset to associate it first.');
     }
   };
 
@@ -176,8 +257,31 @@ const FilterPresets: React.FC = () => {
       name: '',
       description: '',
       isDefault: false,
+      filters: [],
     });
     setSelectedPreset(null);
+  };
+
+  // Filter management functions
+  const addFilter = () => {
+    setFormData({
+      ...formData,
+      filters: [
+        ...formData.filters,
+        { column: '', operator: '=' as FilterOperator, value: '' },
+      ],
+    });
+  };
+
+  const updateFilter = (index: number, field: keyof FilterCondition, value: any) => {
+    const newFilters = [...formData.filters];
+    newFilters[index] = { ...newFilters[index], [field]: value };
+    setFormData({ ...formData, filters: newFilters });
+  };
+
+  const removeFilter = (index: number) => {
+    const newFilters = formData.filters.filter((_, i) => i !== index);
+    setFormData({ ...formData, filters: newFilters });
   };
 
   const openEditModal = (preset: SavedFilterPreset) => {
@@ -188,6 +292,7 @@ const FilterPresets: React.FC = () => {
       dashboardId: preset.dashboardId,
       chartId: preset.chartId,
       isDefault: preset.isDefault,
+      filters: preset.filters || [],
     });
     setIsEditModalOpen(true);
   };
@@ -244,7 +349,7 @@ const FilterPresets: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
         {/* Search */}
         <div className="mb-6">
           <div className="relative max-w-md">
@@ -380,17 +485,21 @@ const FilterPresets: React.FC = () => {
 
                   {/* Association */}
                   {(preset.dashboardId || preset.chartId) && (
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
                       {preset.dashboardId && (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded">
-                          <LayoutDashboard className="h-3 w-3" />
-                          Dashboard
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded max-w-full">
+                          <LayoutDashboard className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">
+                            {dashboards.find(d => d.id === preset.dashboardId)?.name || 'Dashboard'}
+                          </span>
                         </span>
                       )}
                       {preset.chartId && (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 text-xs rounded">
-                          <BarChart3 className="h-3 w-3" />
-                          Chart
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 text-xs rounded max-w-full">
+                          <BarChart3 className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">
+                            {charts.find(c => c.id === preset.chartId)?.name || 'Chart'}
+                          </span>
                         </span>
                       )}
                     </div>
@@ -402,6 +511,15 @@ const FilterPresets: React.FC = () => {
                       <Calendar className="h-3.5 w-3.5" />
                       {formatDate(preset.updatedAt)}
                     </span>
+                    {(preset.dashboardId || preset.chartId) && (
+                      <button
+                        onClick={() => handleApplyPreset(preset)}
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Apply
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -420,11 +538,11 @@ const FilterPresets: React.FC = () => {
               resetForm();
             }}
           />
-          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="px-6 py-4 border-b">
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b flex-shrink-0">
               <h2 className="text-lg font-semibold">Create Filter Preset</h2>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Name *
@@ -499,8 +617,91 @@ const FilterPresets: React.FC = () => {
                   Set as default preset
                 </label>
               </div>
+
+              {/* Filter Conditions Section */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Filter Conditions
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addFilter}
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    Add Filter
+                  </button>
+                </div>
+
+                {formData.filters.length === 0 ? (
+                  <p className="text-sm text-gray-500 italic">No filters configured. Click "Add Filter" to create one.</p>
+                ) : (
+                  <div className="space-y-3 max-h-48 overflow-y-auto">
+                    {formData.filters.map((filter, index) => (
+                      <div key={index} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1 grid grid-cols-3 gap-2">
+                          <input
+                            type="text"
+                            value={filter.column}
+                            onChange={(e) => updateFilter(index, 'column', e.target.value)}
+                            placeholder="Column"
+                            className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                          <select
+                            value={filter.operator}
+                            onChange={(e) => updateFilter(index, 'operator', e.target.value as FilterOperator)}
+                            className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            {FILTER_OPERATORS.map((op) => (
+                              <option key={op.value} value={op.value}>
+                                {op.label}
+                              </option>
+                            ))}
+                          </select>
+                          {filter.operator === 'is_null' || filter.operator === 'is_not_null' ? (
+                            <span className="px-2 py-1.5 text-sm text-gray-400 italic">No value needed</span>
+                          ) : filter.operator === 'between' ? (
+                            <div className="flex gap-1">
+                              <input
+                                type="text"
+                                value={filter.value || ''}
+                                onChange={(e) => updateFilter(index, 'value', e.target.value)}
+                                placeholder="From"
+                                className="w-1/2 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                              <input
+                                type="text"
+                                value={filter.value2 || ''}
+                                onChange={(e) => updateFilter(index, 'value2', e.target.value)}
+                                placeholder="To"
+                                className="w-1/2 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              value={filter.value || ''}
+                              onChange={(e) => updateFilter(index, 'value', e.target.value)}
+                              placeholder="Value"
+                              className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFilter(index)}
+                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 rounded-b-lg">
+            <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 rounded-b-lg flex-shrink-0">
               <button
                 onClick={() => {
                   setIsCreateModalOpen(false);
@@ -532,11 +733,11 @@ const FilterPresets: React.FC = () => {
               resetForm();
             }}
           />
-          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="px-6 py-4 border-b">
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b flex-shrink-0">
               <h2 className="text-lg font-semibold">Edit Filter Preset</h2>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Name *
@@ -571,8 +772,91 @@ const FilterPresets: React.FC = () => {
                   Set as default preset
                 </label>
               </div>
+
+              {/* Filter Conditions Section */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Filter Conditions
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addFilter}
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    Add Filter
+                  </button>
+                </div>
+
+                {formData.filters.length === 0 ? (
+                  <p className="text-sm text-gray-500 italic">No filters configured. Click "Add Filter" to create one.</p>
+                ) : (
+                  <div className="space-y-3 max-h-48 overflow-y-auto">
+                    {formData.filters.map((filter, index) => (
+                      <div key={index} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1 grid grid-cols-3 gap-2">
+                          <input
+                            type="text"
+                            value={filter.column}
+                            onChange={(e) => updateFilter(index, 'column', e.target.value)}
+                            placeholder="Column"
+                            className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                          <select
+                            value={filter.operator}
+                            onChange={(e) => updateFilter(index, 'operator', e.target.value as FilterOperator)}
+                            className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            {FILTER_OPERATORS.map((op) => (
+                              <option key={op.value} value={op.value}>
+                                {op.label}
+                              </option>
+                            ))}
+                          </select>
+                          {filter.operator === 'is_null' || filter.operator === 'is_not_null' ? (
+                            <span className="px-2 py-1.5 text-sm text-gray-400 italic">No value needed</span>
+                          ) : filter.operator === 'between' ? (
+                            <div className="flex gap-1">
+                              <input
+                                type="text"
+                                value={filter.value || ''}
+                                onChange={(e) => updateFilter(index, 'value', e.target.value)}
+                                placeholder="From"
+                                className="w-1/2 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                              <input
+                                type="text"
+                                value={filter.value2 || ''}
+                                onChange={(e) => updateFilter(index, 'value2', e.target.value)}
+                                placeholder="To"
+                                className="w-1/2 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              value={filter.value || ''}
+                              onChange={(e) => updateFilter(index, 'value', e.target.value)}
+                              placeholder="Value"
+                              className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFilter(index)}
+                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 rounded-b-lg">
+            <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 rounded-b-lg flex-shrink-0">
               <button
                 onClick={() => {
                   setIsEditModalOpen(false);

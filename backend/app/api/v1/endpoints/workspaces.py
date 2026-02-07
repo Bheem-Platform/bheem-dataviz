@@ -49,7 +49,14 @@ async def list_workspaces(
 ):
     """List all workspaces the current user is a member of"""
     service = get_workspace_service(db)
-    return await service.list_user_workspaces(current_user.id)
+
+    # Get local user ID (if exists)
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        # No local user means no workspaces yet
+        return []
+
+    return await service.list_user_workspaces(local_user_id)
 
 
 @router.post("/", response_model=WorkspaceResponse)
@@ -60,9 +67,20 @@ async def create_workspace(
 ):
     """Create a new workspace"""
     service = get_workspace_service(db)
+
+    # Ensure local user exists for foreign key compliance
+    local_user = await service.get_or_create_local_user(
+        passport_user_id=current_user.id,
+        email=current_user.email,
+        name=current_user.name,
+        role=current_user.role,
+        company_code=current_user.company_code,
+        company_name=current_user.company_name,
+    )
+
     workspace = await service.create_workspace(
         data=data,
-        owner_id=current_user.id,
+        owner_id=str(local_user.id),
     )
 
     member_count = await service.get_member_count(str(workspace.id))
@@ -93,8 +111,19 @@ async def get_personal_workspace(
 ):
     """Get or create the current user's personal workspace"""
     service = get_workspace_service(db)
+
+    # Ensure local user exists for foreign key compliance
+    local_user = await service.get_or_create_local_user(
+        passport_user_id=current_user.id,
+        email=current_user.email,
+        name=current_user.name,
+        role=current_user.role,
+        company_code=current_user.company_code,
+        company_name=current_user.company_name,
+    )
+
     workspace = await service.get_or_create_personal_workspace(
-        user_id=current_user.id,
+        user_id=str(local_user.id),
         user_email=current_user.email,
     )
 
@@ -128,8 +157,13 @@ async def get_workspace(
     """Get a workspace by ID"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="Not a member of this workspace")
+
     # Verify membership
-    member = await service.get_member(workspace_id, current_user.id)
+    member = await service.get_member(workspace_id, local_user_id)
     if not member:
         raise HTTPException(status_code=403, detail="Not a member of this workspace")
 
@@ -168,16 +202,21 @@ async def update_workspace(
     """Update a workspace"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
     # Check permission
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.id,
+        local_user_id,
         "can_manage_workspace",
     )
     if not has_permission:
         # Allow admin to update non-ownership fields
-        member = await service.get_member(workspace_id, current_user.id)
-        if not member or member.role.value not in ["owner", "admin"]:
+        member = await service.get_member(workspace_id, local_user_id)
+        if not member or (member.role if isinstance(member.role, str) else member.role.value) not in ["owner", "admin"]:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     workspace = await service.update_workspace(workspace_id, data)
@@ -214,11 +253,16 @@ async def delete_workspace(
     """Delete a workspace (owner only)"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="Only the owner can delete a workspace")
+
     workspace = await service.get_workspace(workspace_id)
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
 
-    if str(workspace.owner_id) != current_user.id:
+    if str(workspace.owner_id) != local_user_id:
         raise HTTPException(status_code=403, detail="Only the owner can delete a workspace")
 
     try:
@@ -238,10 +282,15 @@ async def transfer_ownership(
     """Transfer workspace ownership to another member"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="User not found")
+
     try:
         await service.transfer_ownership(
             workspace_id=workspace_id,
-            current_owner_id=current_user.id,
+            current_owner_id=local_user_id,
             new_owner_id=data.new_owner_id,
         )
         return {"success": True, "message": "Ownership transferred"}
@@ -263,25 +312,32 @@ async def list_members(
     """List workspace members"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="Not a member of this workspace")
+
     # Verify membership
-    member = await service.get_member(workspace_id, current_user.id)
+    member = await service.get_member(workspace_id, local_user_id)
     if not member:
         raise HTTPException(status_code=403, detail="Not a member of this workspace")
 
-    members = await service.list_members(workspace_id, include_inactive)
+    members_with_users = await service.list_members(workspace_id, include_inactive)
 
     return [
         MemberResponse(
             id=str(m.id),
             workspace_id=str(m.workspace_id),
             user_id=str(m.user_id),
-            role=WorkspaceRole(m.role.value),
+            role=WorkspaceRole(m.role if isinstance(m.role, str) else m.role.value),
             custom_permissions=m.custom_permissions or {},
             is_active=m.is_active,
             joined_at=m.joined_at,
             last_accessed_at=m.last_accessed_at,
+            user_email=user.email if user else None,
+            user_name=user.full_name if user else None,
         )
-        for m in members
+        for m, user in members_with_users
     ]
 
 
@@ -295,9 +351,14 @@ async def add_member(
     """Add a member to a workspace (admin only)"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.id,
+        local_user_id,
         "can_manage_members",
     )
     if not has_permission:
@@ -308,14 +369,14 @@ async def add_member(
             workspace_id=workspace_id,
             user_id=data.user_id,
             role=data.role,
-            invited_by=current_user.id,
+            invited_by=local_user_id,
         )
 
         return MemberResponse(
             id=str(member.id),
             workspace_id=str(member.workspace_id),
             user_id=str(member.user_id),
-            role=WorkspaceRole(member.role.value),
+            role=WorkspaceRole(member.role if isinstance(member.role, str) else member.role.value),
             custom_permissions=member.custom_permissions or {},
             is_active=member.is_active,
             joined_at=member.joined_at,
@@ -336,9 +397,14 @@ async def update_member(
     """Update a workspace member"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.id,
+        local_user_id,
         "can_manage_members",
     )
     if not has_permission:
@@ -370,11 +436,16 @@ async def remove_member(
     """Remove a member from a workspace"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
     # Allow self-removal or admin removal
-    if user_id != current_user.id:
+    if user_id != local_user_id:
         has_permission = await service.check_permission(
             workspace_id,
-            current_user.id,
+            local_user_id,
             "can_manage_members",
         )
         if not has_permission:
@@ -402,9 +473,14 @@ async def list_invitations(
     """List workspace invitations"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.id,
+        local_user_id,
         "can_manage_members",
     )
     if not has_permission:
@@ -417,8 +493,8 @@ async def list_invitations(
             id=str(inv.id),
             workspace_id=str(inv.workspace_id),
             email=inv.email,
-            role=WorkspaceRole(inv.role.value),
-            status=InviteStatus(inv.status.value),
+            role=WorkspaceRole(inv.role if isinstance(inv.role, str) else inv.role.value),
+            status=InviteStatus(inv.status if isinstance(inv.status, str) else inv.status.value),
             message=inv.message,
             invited_by=str(inv.invited_by),
             expires_at=inv.expires_at,
@@ -439,9 +515,14 @@ async def create_invitation(
     """Create a workspace invitation"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.id,
+        local_user_id,
         "can_manage_members",
     )
     if not has_permission:
@@ -451,15 +532,15 @@ async def create_invitation(
         invitation = await service.create_invitation(
             workspace_id=workspace_id,
             data=data,
-            invited_by=current_user.id,
+            invited_by=local_user_id,
         )
 
         return InvitationResponse(
             id=str(invitation.id),
             workspace_id=str(invitation.workspace_id),
             email=invitation.email,
-            role=WorkspaceRole(invitation.role.value),
-            status=InviteStatus(invitation.status.value),
+            role=WorkspaceRole(invitation.role if isinstance(invitation.role, str) else invitation.role.value),
+            status=InviteStatus(invitation.status if isinstance(invitation.status, str) else invitation.status.value),
             message=invitation.message,
             invited_by=str(invitation.invited_by),
             expires_at=invitation.expires_at,
@@ -480,9 +561,14 @@ async def bulk_invite(
     """Send bulk invitations"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.id,
+        local_user_id,
         "can_manage_members",
     )
     if not has_permission:
@@ -500,7 +586,7 @@ async def bulk_invite(
                     role=data.role,
                     message=data.message,
                 ),
-                invited_by=current_user.id,
+                invited_by=local_user_id,
             )
             sent.append(email)
         except ValueError as e:
@@ -523,17 +609,27 @@ async def accept_invitation(
     """Accept a workspace invitation"""
     service = get_workspace_service(db)
 
+    # Ensure local user exists
+    local_user = await service.get_or_create_local_user(
+        passport_user_id=current_user.id,
+        email=current_user.email,
+        name=current_user.name,
+        role=current_user.role,
+        company_code=current_user.company_code,
+        company_name=current_user.company_name,
+    )
+
     try:
         member = await service.accept_invitation(
             token=data.token,
-            user_id=current_user.id,
+            user_id=str(local_user.id),
         )
 
         return MemberResponse(
             id=str(member.id),
             workspace_id=str(member.workspace_id),
             user_id=str(member.user_id),
-            role=WorkspaceRole(member.role.value),
+            role=WorkspaceRole(member.role if isinstance(member.role, str) else member.role.value),
             custom_permissions=member.custom_permissions or {},
             is_active=member.is_active,
             joined_at=member.joined_at,
@@ -568,9 +664,14 @@ async def cancel_invitation(
     """Cancel a pending invitation"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.id,
+        local_user_id,
         "can_manage_members",
     )
     if not has_permission:
@@ -596,9 +697,14 @@ async def check_permission(
     """Check if user has permission for an action"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        return PermissionCheckResponse(allowed=False)
+
     allowed = await service.check_permission(
         workspace_id=workspace_id,
-        user_id=current_user.id,
+        user_id=local_user_id,
         action=data.action,
         object_type=data.object_type,
         object_id=data.object_id,
@@ -617,9 +723,14 @@ async def set_object_permission(
     """Set object-level permissions"""
     service = get_workspace_service(db)
 
+    # Get local user ID
+    local_user_id = await service.get_local_user_id(current_user.id)
+    if not local_user_id:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
     has_permission = await service.check_permission(
         workspace_id,
-        current_user.id,
+        local_user_id,
         "can_manage_members",
     )
     if not has_permission:
@@ -629,7 +740,7 @@ async def set_object_permission(
         permission = await service.set_object_permission(
             workspace_id=workspace_id,
             data=data,
-            created_by=current_user.id,
+            created_by=local_user_id,
         )
 
         return ObjectPermissionResponse(
@@ -638,7 +749,7 @@ async def set_object_permission(
             object_type=permission.object_type,
             object_id=str(permission.object_id),
             user_id=str(permission.user_id) if permission.user_id else None,
-            role=WorkspaceRole(permission.role.value) if permission.role else None,
+            role=WorkspaceRole(permission.role if isinstance(permission.role, str) else permission.role.value) if permission.role else None,
             can_view=permission.can_view,
             can_edit=permission.can_edit,
             can_delete=permission.can_delete,

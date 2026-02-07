@@ -43,6 +43,15 @@ import PerformanceMonitor from './pages/PerformanceMonitor'
 import Compliance from './pages/Compliance'
 import SecuritySettings from './pages/SecuritySettings'
 import Subscriptions from './pages/Subscriptions'
+// Governance Pages
+import DataGovernance from './pages/DataGovernance'
+import DeploymentPipelines from './pages/DeploymentPipelines'
+import DataLineage from './pages/DataLineage'
+import VersionControl from './pages/VersionControl'
+import DataQuality from './pages/DataQuality'
+import SchemaTracking from './pages/SchemaTracking'
+import AppBundling from './pages/AppBundling'
+import UserAnalyticsDashboard from './pages/UserAnalyticsDashboard'
 
 function App() {
   return (
@@ -111,6 +120,18 @@ function App() {
           <Route path="performance" element={<PerformanceMonitor />} />
           <Route path="compliance" element={<Compliance />} />
           <Route path="security" element={<SecuritySettings />} />
+
+          {/* Governance */}
+          <Route path="governance" element={<DataGovernance />} />
+          <Route path="governance/stewards" element={<DataGovernance />} />
+          <Route path="governance/ownership" element={<DataGovernance />} />
+          <Route path="deployments" element={<DeploymentPipelines />} />
+          <Route path="lineage" element={<DataLineage />} />
+          <Route path="versions" element={<VersionControl />} />
+          <Route path="quality" element={<DataQuality />} />
+          <Route path="schema" element={<SchemaTracking />} />
+          <Route path="apps" element={<AppBundling />} />
+          <Route path="analytics" element={<UserAnalyticsDashboard />} />
 
           {/* Charts */}
           <Route path="charts/new" element={<ChartBuilder />} />

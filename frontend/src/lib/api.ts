@@ -2,9 +2,15 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 
 const API_BASE = '/api/v1'
 
-// Token storage key - standardized to 'access_token'
+// Token storage keys - must match AuthContext
 const TOKEN_KEY = 'access_token'
 const REFRESH_TOKEN_KEY = 'refresh_token'
+const LAST_ACTIVITY_KEY = 'last_activity'
+
+// Update last activity on successful API calls
+const updateLastActivity = () => {
+  localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString())
+}
 
 export const api = axios.create({
   baseURL: API_BASE,
@@ -15,6 +21,7 @@ export const api = axios.create({
 
 // Flag to prevent multiple simultaneous refresh attempts
 let isRefreshing = false
+let isRedirecting = false
 let failedQueue: Array<{
   resolve: (token: string) => void
   reject: (error: any) => void
@@ -29,6 +36,16 @@ const processQueue = (error: any, token: string | null = null) => {
     }
   })
   failedQueue = []
+}
+
+// Safe redirect to login - prevents multiple redirects
+const redirectToLogin = () => {
+  if (isRedirecting) return
+  isRedirecting = true
+  // Small delay to prevent race conditions
+  setTimeout(() => {
+    window.location.href = '/login'
+  }, 100)
 }
 
 // Request interceptor for auth
@@ -75,7 +92,7 @@ api.interceptors.response.use(
         isRefreshing = false
         localStorage.removeItem(TOKEN_KEY)
         localStorage.removeItem(REFRESH_TOKEN_KEY)
-        window.location.href = '/login'
+        redirectToLogin()
         return Promise.reject(error)
       }
 
@@ -91,6 +108,9 @@ api.interceptors.response.use(
         localStorage.setItem(TOKEN_KEY, access_token)
         localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken)
 
+        // Update last activity timestamp
+        updateLastActivity()
+
         // Update the authorization header
         originalRequest.headers.Authorization = `Bearer ${access_token}`
 
@@ -100,13 +120,24 @@ api.interceptors.response.use(
 
         // Retry the original request
         return api(originalRequest)
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         // Refresh failed - clear tokens and redirect to login
         processQueue(refreshError, null)
         isRefreshing = false
-        localStorage.removeItem(TOKEN_KEY)
-        localStorage.removeItem(REFRESH_TOKEN_KEY)
-        window.location.href = '/login'
+
+        // Only clear tokens and redirect for auth errors, not network errors
+        const isNetworkError = refreshError?.message?.includes('Network') ||
+                               refreshError?.code === 'ERR_NETWORK' ||
+                               !navigator.onLine
+
+        if (!isNetworkError) {
+          console.log('Token refresh failed, redirecting to login')
+          localStorage.removeItem(TOKEN_KEY)
+          localStorage.removeItem(REFRESH_TOKEN_KEY)
+          redirectToLogin()
+        } else {
+          console.log('Network error during refresh, not logging out')
+        }
         return Promise.reject(refreshError)
       }
     }

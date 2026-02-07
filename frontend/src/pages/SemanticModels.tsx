@@ -595,42 +595,51 @@ export function SemanticModels() {
   // ============================================================================
   if (viewMode === 'list') {
     return (
-      <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-        <header className="px-8 py-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between max-w-7xl mx-auto">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-10 h-10 rounded-md bg-primary-500 flex items-center justify-center">
-                  <Layers className="w-5 h-5 text-white" />
+      <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 via-white to-indigo-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-indigo-950/20">
+        {/* Header */}
+        <div className="px-6 lg:px-8 py-6 border-b border-gray-200/60 dark:border-gray-700/60 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl">
+          <div className="max-w-7xl mx-auto">
+            {/* Title Row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/25">
+                  <Layers className="w-7 h-7 text-white" />
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Semantic Models
-                </h1>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    Semantic Models
+                  </h1>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    Define data models with measures, dimensions, and relationships
+                  </p>
+                </div>
               </div>
-              <p className="text-gray-500 dark:text-gray-400 ml-13">
-                Define data models with measures, dimensions, and relationships
-              </p>
+              <button
+                onClick={startNewModel}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all"
+              >
+                <Plus className="w-5 h-5" />
+                New Model
+              </button>
             </div>
-            <button
-              onClick={startNewModel}
-              className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-md font-medium hover:bg-indigo-800 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              New Model
-            </button>
           </div>
-        </header>
+        </div>
 
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             {loading ? (
               <div className="flex items-center justify-center h-64">
-                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                    <Loader2 className="w-8 h-8 animate-spin text-white" />
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400">Loading models...</p>
+                </div>
               </div>
             ) : models.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center">
-                <div className="w-20 h-20 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-6">
-                  <Layers className="w-10 h-10 text-gray-400" />
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center mb-6 shadow-lg shadow-purple-500/25">
+                  <Layers className="w-10 h-10 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   No semantic models yet
@@ -640,29 +649,30 @@ export function SemanticModels() {
                 </p>
                 <button
                   onClick={startNewModel}
-                  className="flex items-center gap-2 px-6 py-3 bg-primary-500 text-white rounded-md font-medium hover:bg-primary-700"
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all"
                 >
                   <Plus className="w-5 h-5" />
                   Create Model
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {models.map((model) => {
                   const conn = connections.find(c => c.id === model.connection_id)
                   return (
                     <div
                       key={model.id}
-                      className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-600 transition-all"
+                      className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-5 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
                     >
+                      {/* Header */}
                       <div className="flex items-start justify-between mb-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center">
-                          <Layers className="w-6 h-6 text-indigo-700" />
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-110 transition-transform duration-300">
+                          <Layers className="w-6 h-6 text-white" />
                         </div>
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => editModel(model.id)}
-                            className="p-2 text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                            className="p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
                             title="Edit"
                           >
                             <Edit3 className="w-4 h-4" />
@@ -677,50 +687,55 @@ export function SemanticModels() {
                         </div>
                       </div>
 
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1 truncate">
-                        {model.name}
-                      </h3>
+                      {/* Content */}
+                      <div className="flex-1 mb-4">
+                        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          {model.name}
+                        </h3>
 
-                      {model.description && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">
-                          {model.description}
-                        </p>
-                      )}
+                        {model.description && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">
+                            {model.description}
+                          </p>
+                        )}
 
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                          <Database className="w-4 h-4" />
-                          <span className="truncate">{conn?.name || 'Unknown'}</span>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <Database className="w-4 h-4 text-indigo-500" />
+                            <span className="truncate">{conn?.name || 'Unknown'}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            {model.transform_id ? (
+                              <>
+                                <Wand2 className="w-4 h-4 text-purple-500" />
+                                <span className="truncate">{model.transform_name || 'Transform'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Table2 className="w-4 h-4 text-purple-500" />
+                                <span className="truncate">{model.schema_name}.{model.table_name}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                          {model.transform_id ? (
-                            <>
-                              <Wand2 className="w-4 h-4 text-purple-500" />
-                              <span className="truncate">{model.transform_name || 'Transform'}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Table2 className="w-4 h-4" />
-                              <span className="truncate">{model.schema_name}.{model.table_name}</span>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4 pt-2">
-                          <span className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-xs">
-                            <Calculator className="w-3 h-3" />
-                            {model.measures_count} measures
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-gray-100 dark:border-gray-700 mt-auto">
+                        <span className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md text-xs font-medium">
+                          <Calculator className="w-3 h-3" />
+                          {model.measures_count}
+                        </span>
+                        <span className="flex items-center gap-1.5 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-md text-xs font-medium">
+                          <Columns className="w-3 h-3" />
+                          {model.dimensions_count}
+                        </span>
+                        {model.joins_count > 0 && (
+                          <span className="flex items-center gap-1.5 px-2 py-0.5 bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 rounded-md text-xs font-medium">
+                            <Link2 className="w-3 h-3" />
+                            {model.joins_count}
                           </span>
-                          <span className="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs">
-                            <Columns className="w-3 h-3" />
-                            {model.dimensions_count} dims
-                          </span>
-                          {model.joins_count > 0 && (
-                            <span className="flex items-center gap-1.5 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-xs">
-                              <Link2 className="w-3 h-3" />
-                              {model.joins_count} joins
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                   )
@@ -737,16 +752,19 @@ export function SemanticModels() {
   // EDITOR VIEW
   // ============================================================================
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 via-white to-indigo-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-indigo-950/20">
       {/* Header */}
-      <header className="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <header className="px-6 py-4 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-700/60 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={() => setViewMode('list')}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            className="p-2 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-gray-700 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-700 rounded-xl transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+            <Layers className="w-5 h-5 text-white" />
+          </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">
               {editingModel ? 'Edit Model' : 'New Semantic Model'}
@@ -757,7 +775,7 @@ export function SemanticModels() {
         <button
           onClick={saveModel}
           disabled={saving || !modelName || (sourceType === 'transform' ? !selectedTransform : (!selectedConnection || !selectedTable))}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 disabled:opacity-50 transition-all"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {editingModel ? 'Save Changes' : 'Create Model'}
@@ -766,7 +784,7 @@ export function SemanticModels() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Model Configuration */}
-        <div className="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto p-4 space-y-6">
+        <div className="w-80 border-r border-gray-200/60 dark:border-gray-700/60 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm overflow-y-auto p-5 space-y-6">
           {/* Basic Info */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Model Name *</label>
@@ -775,7 +793,7 @@ export function SemanticModels() {
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
               placeholder="e.g., Sales Analytics"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
             />
           </div>
 
@@ -786,7 +804,7 @@ export function SemanticModels() {
               onChange={(e) => setModelDescription(e.target.value)}
               placeholder="Describe what this model is for..."
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
             />
           </div>
 
@@ -805,10 +823,10 @@ export function SemanticModels() {
                   }
                 }}
                 disabled={!!editingModel}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border transition-all ${
                   sourceType === 'transform'
-                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                    : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm'
+                    : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-indigo-300'
                 } ${editingModel ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Wand2 className="w-4 h-4" />
@@ -824,10 +842,10 @@ export function SemanticModels() {
                   }
                 }}
                 disabled={!!editingModel}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border transition-all ${
                   sourceType === 'table'
-                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                    : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm'
+                    : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-indigo-300'
                 } ${editingModel ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Table2 className="w-4 h-4" />
@@ -843,7 +861,7 @@ export function SemanticModels() {
                 Select Transform *
               </label>
               {transforms.length === 0 ? (
-                <div className="text-sm text-gray-500 dark:text-gray-400 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div className="text-sm text-gray-500 dark:text-gray-400 p-3 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
                   No transforms available. Create a transform first.
                 </div>
               ) : (
@@ -863,7 +881,7 @@ export function SemanticModels() {
                     }
                   }}
                   disabled={!!editingModel}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
                 >
                   <option value="">Select transform...</option>
                   {transforms.map(t => (
@@ -872,7 +890,8 @@ export function SemanticModels() {
                 </select>
               )}
               {selectedTransform && (
-                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <div className="mt-2 text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                  <Database className="w-3 h-3" />
                   Source: {selectedTransform.source_schema}.{selectedTransform.source_table}
                 </div>
               )}
@@ -894,7 +913,7 @@ export function SemanticModels() {
                     setColumns([])
                   }}
                   disabled={!!editingModel}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
                 >
                   <option value="">Select connection...</option>
                   {connections.map(c => (
@@ -909,7 +928,7 @@ export function SemanticModels() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Base Table *</label>
                   {loadingTables ? (
                     <div className="flex items-center justify-center py-4">
-                      <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                      <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
                     </div>
                   ) : (
                     <select
@@ -920,7 +939,7 @@ export function SemanticModels() {
                         if (table) setSelectedSchema(table.schema_name)
                       }}
                       disabled={!!editingModel}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+                      className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
                     >
                       <option value="">Select table...</option>
                       {tables.map(t => (
@@ -938,14 +957,18 @@ export function SemanticModels() {
           {/* Available Columns */}
           {columns.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Available Columns ({columns.length})
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <Columns className="w-4 h-4 text-indigo-500" />
+                Available Columns
+                <span className="ml-auto text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full">
+                  {columns.length}
+                </span>
               </label>
-              <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="max-h-48 overflow-y-auto border border-gray-200/60 dark:border-gray-700/60 rounded-xl bg-white/50 dark:bg-gray-800/50">
                 {columns.map(col => (
-                  <div key={col.name} className="px-3 py-2 text-sm border-b border-gray-100 dark:border-gray-700 last:border-0">
-                    <span className="text-gray-900 dark:text-white">{col.name}</span>
-                    <span className="text-gray-400 ml-2 text-xs">{col.type}</span>
+                  <div key={col.name} className="px-3 py-2 text-sm border-b border-gray-100 dark:border-gray-700/50 last:border-0 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-colors">
+                    <span className="text-gray-900 dark:text-white font-medium">{col.name}</span>
+                    <span className="text-indigo-500 dark:text-indigo-400 ml-2 text-xs">{col.type}</span>
                   </div>
                 ))}
               </div>
@@ -954,48 +977,56 @@ export function SemanticModels() {
         </div>
 
         {/* Right Panel - Measures, Dimensions, Joins */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-gray-50/50 via-white to-indigo-50/30 dark:from-gray-900/50 dark:via-gray-900 dark:to-indigo-950/20">
           {!editingModel ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
-              <Layers className="w-16 h-16 mb-4 text-gray-300" />
-              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center mb-6 shadow-lg shadow-purple-500/25">
+                <Layers className="w-10 h-10 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 Configure Base Model First
               </h3>
-              <p className="max-w-md">
+              <p className="max-w-md text-gray-500 dark:text-gray-400">
                 Fill in the model name, select a connection and base table, then click "Create Model" to add measures and dimensions.
               </p>
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
               {/* Measures Section */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
                 <button
                   onClick={() => toggleSection('measures')}
-                  className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full px-5 py-4 flex items-center justify-between bg-gradient-to-r from-indigo-50/80 to-purple-50/80 dark:from-indigo-900/30 dark:to-purple-900/30 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/40 dark:hover:to-purple-900/40 transition-colors"
                 >
-                  <div className="flex items-center gap-2">
-                    <Calculator className="w-5 h-5 text-blue-500" />
-                    <span className="font-medium text-gray-900 dark:text-white">Measures</span>
-                    <span className="text-sm text-gray-500">({editingModel.measures.length})</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/25">
+                      <Calculator className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="font-semibold text-gray-900 dark:text-white">Measures</span>
+                    <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full font-medium">
+                      {editingModel.measures.length}
+                    </span>
                   </div>
-                  {expandedSections.measures ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                  {expandedSections.measures ? <ChevronDown className="w-5 h-5 text-indigo-500" /> : <ChevronRight className="w-5 h-5 text-indigo-500" />}
                 </button>
 
                 {expandedSections.measures && (
-                  <div className="p-4">
+                  <div className="p-5">
                     {editingModel.measures.length === 0 ? (
-                      <p className="text-sm text-gray-500 mb-4">No measures defined. Add measures to enable aggregations.</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 p-3 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+                        No measures defined. Add measures to enable aggregations.
+                      </p>
                     ) : (
                       <div className="space-y-2 mb-4">
                         {editingModel.measures.map(m => (
-                          <div key={m.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                          <div key={m.id} className="flex items-center justify-between px-4 py-3 bg-indigo-50/50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-xl hover:bg-indigo-100/50 dark:hover:bg-indigo-900/30 transition-colors">
                             <div>
                               <span className="font-medium text-gray-900 dark:text-white">{m.name}</span>
-                              <span className="text-sm text-gray-500 ml-2">{m.expression}</span>
+                              <span className="text-sm text-indigo-600 dark:text-indigo-400 ml-2">{m.expression}</span>
                             </div>
                             <button
                               onClick={() => removeMeasure(m.id)}
-                              className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1005,7 +1036,7 @@ export function SemanticModels() {
                     )}
                     <button
                       onClick={() => setShowMeasureModal(true)}
-                      className="flex items-center gap-2 text-sm text-blue-500 hover:text-blue-600"
+                      className="flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
                     >
                       <Plus className="w-4 h-4" /> Add Measure
                     </button>
@@ -1014,34 +1045,40 @@ export function SemanticModels() {
               </div>
 
               {/* Dimensions Section */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
                 <button
                   onClick={() => toggleSection('dimensions')}
-                  className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full px-5 py-4 flex items-center justify-between bg-gradient-to-r from-purple-50/80 to-fuchsia-50/80 dark:from-purple-900/30 dark:to-fuchsia-900/30 hover:from-purple-100 hover:to-fuchsia-100 dark:hover:from-purple-900/40 dark:hover:to-fuchsia-900/40 transition-colors"
                 >
-                  <div className="flex items-center gap-2">
-                    <Columns className="w-5 h-5 text-green-500" />
-                    <span className="font-medium text-gray-900 dark:text-white">Dimensions</span>
-                    <span className="text-sm text-gray-500">({editingModel.dimensions.length})</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center shadow-md shadow-purple-500/25">
+                      <Columns className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="font-semibold text-gray-900 dark:text-white">Dimensions</span>
+                    <span className="text-xs bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full font-medium">
+                      {editingModel.dimensions.length}
+                    </span>
                   </div>
-                  {expandedSections.dimensions ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                  {expandedSections.dimensions ? <ChevronDown className="w-5 h-5 text-purple-500" /> : <ChevronRight className="w-5 h-5 text-purple-500" />}
                 </button>
 
                 {expandedSections.dimensions && (
-                  <div className="p-4">
+                  <div className="p-5">
                     {editingModel.dimensions.length === 0 ? (
-                      <p className="text-sm text-gray-500 mb-4">No dimensions defined. Add dimensions for grouping and filtering.</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 p-3 bg-purple-50/50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800/50">
+                        No dimensions defined. Add dimensions for grouping and filtering.
+                      </p>
                     ) : (
                       <div className="space-y-2 mb-4">
                         {editingModel.dimensions.map(d => (
-                          <div key={d.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                          <div key={d.id} className="flex items-center justify-between px-4 py-3 bg-purple-50/50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/50 rounded-xl hover:bg-purple-100/50 dark:hover:bg-purple-900/30 transition-colors">
                             <div>
                               <span className="font-medium text-gray-900 dark:text-white">{d.name}</span>
-                              <span className="text-sm text-gray-500 ml-2">{d.column_name}</span>
+                              <span className="text-sm text-purple-600 dark:text-purple-400 ml-2">{d.column_name}</span>
                             </div>
                             <button
                               onClick={() => removeDimension(d.id)}
-                              className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1051,7 +1088,7 @@ export function SemanticModels() {
                     )}
                     <button
                       onClick={() => setShowDimensionModal(true)}
-                      className="flex items-center gap-2 text-sm text-green-500 hover:text-green-600"
+                      className="flex items-center gap-2 text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
                     >
                       <Plus className="w-4 h-4" /> Add Dimension
                     </button>
@@ -1060,39 +1097,47 @@ export function SemanticModels() {
               </div>
 
               {/* Joins/Relationships Section */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
                 <button
                   onClick={() => toggleSection('joins')}
-                  className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full px-5 py-4 flex items-center justify-between bg-gradient-to-r from-fuchsia-50/80 to-pink-50/80 dark:from-fuchsia-900/30 dark:to-pink-900/30 hover:from-fuchsia-100 hover:to-pink-100 dark:hover:from-fuchsia-900/40 dark:hover:to-pink-900/40 transition-colors"
                 >
-                  <div className="flex items-center gap-2">
-                    <GitBranch className="w-5 h-5 text-purple-500" />
-                    <span className="font-medium text-gray-900 dark:text-white">Relationships</span>
-                    <span className="text-sm text-gray-500">({editingModel.joins.length})</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-fuchsia-500 to-pink-600 flex items-center justify-center shadow-md shadow-fuchsia-500/25">
+                      <GitBranch className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="font-semibold text-gray-900 dark:text-white">Relationships</span>
+                    <span className="text-xs bg-fuchsia-100 dark:bg-fuchsia-900/50 text-fuchsia-700 dark:text-fuchsia-300 px-2 py-0.5 rounded-full font-medium">
+                      {editingModel.joins.length}
+                    </span>
                   </div>
-                  {expandedSections.joins ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                  {expandedSections.joins ? <ChevronDown className="w-5 h-5 text-fuchsia-500" /> : <ChevronRight className="w-5 h-5 text-fuchsia-500" />}
                 </button>
 
                 {expandedSections.joins && (
-                  <div className="p-4">
+                  <div className="p-5">
                     {editingModel.joins.length === 0 && (!editingModel.joined_transforms || editingModel.joined_transforms.length === 0) ? (
-                      <p className="text-sm text-gray-500 mb-4">No relationships defined. Add joins to connect related tables or transforms.</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 p-3 bg-fuchsia-50/50 dark:bg-fuchsia-900/20 rounded-xl border border-fuchsia-100 dark:border-fuchsia-800/50">
+                        No relationships defined. Add joins to connect related tables or transforms.
+                      </p>
                     ) : (
                       <div className="space-y-2 mb-4">
                         {/* Table Joins */}
                         {editingModel.joins.map(j => (
-                          <div key={j.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <Table2 className="w-4 h-4 text-gray-400" />
+                          <div key={j.id} className="flex items-center justify-between px-4 py-3 bg-fuchsia-50/50 dark:bg-fuchsia-900/20 border border-fuchsia-100 dark:border-fuchsia-800/50 rounded-xl hover:bg-fuchsia-100/50 dark:hover:bg-fuchsia-900/30 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-fuchsia-100 dark:bg-fuchsia-900/50 flex items-center justify-center">
+                                <Table2 className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-400" />
+                              </div>
                               <div>
                                 <span className="font-medium text-gray-900 dark:text-white">{j.target_table}</span>
-                                <span className="text-sm text-gray-500 ml-2">({j.join_type})</span>
+                                <span className="text-sm text-fuchsia-600 dark:text-fuchsia-400 ml-2">({j.join_type})</span>
                                 <div className="text-xs text-gray-400 mt-1">{j.join_condition}</div>
                               </div>
                             </div>
                             <button
                               onClick={() => removeJoin(j.id)}
-                              className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1100,9 +1145,11 @@ export function SemanticModels() {
                         ))}
                         {/* Transform Joins */}
                         {editingModel.joined_transforms?.map(jt => (
-                          <div key={jt.transform_id} className="flex items-center justify-between px-3 py-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                            <div className="flex items-center gap-2">
-                              <Wand2 className="w-4 h-4 text-purple-500" />
+                          <div key={jt.transform_id} className="flex items-center justify-between px-4 py-3 bg-purple-50/50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/50 rounded-xl hover:bg-purple-100/50 dark:hover:bg-purple-900/30 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+                                <Wand2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                              </div>
                               <div>
                                 <span className="font-medium text-gray-900 dark:text-white">{jt.transform_name || jt.alias}</span>
                                 <span className="text-sm text-purple-600 dark:text-purple-400 ml-2">({jt.join_type} join)</span>
@@ -1113,7 +1160,7 @@ export function SemanticModels() {
                             </div>
                             <button
                               onClick={() => removeJoin(jt.transform_id)}
-                              className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1123,7 +1170,7 @@ export function SemanticModels() {
                     )}
                     <button
                       onClick={() => setShowJoinModal(true)}
-                      className="flex items-center gap-2 text-sm text-purple-500 hover:text-purple-600"
+                      className="flex items-center gap-2 text-sm font-medium text-fuchsia-600 hover:text-fuchsia-700 dark:text-fuchsia-400 dark:hover:text-fuchsia-300"
                     >
                       <Plus className="w-4 h-4" /> Add Relationship
                     </button>
@@ -1132,39 +1179,41 @@ export function SemanticModels() {
               </div>
 
               {/* Preview Section */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
                 <button
                   onClick={() => setShowPreviewSection(!showPreviewSection)}
-                  className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/40 dark:hover:to-purple-900/40"
+                  className="w-full px-5 py-4 flex items-center justify-between bg-gradient-to-r from-indigo-50/80 via-purple-50/80 to-fuchsia-50/80 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-fuchsia-900/30 hover:from-indigo-100 hover:via-purple-100 hover:to-fuchsia-100 dark:hover:from-indigo-900/40 dark:hover:via-purple-900/40 dark:hover:to-fuchsia-900/40 transition-colors"
                 >
-                  <div className="flex items-center gap-2">
-                    <Eye className="w-5 h-5 text-indigo-600" />
-                    <span className="font-medium text-gray-900 dark:text-white">Data Preview</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-md shadow-purple-500/25">
+                      <Eye className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="font-semibold text-gray-900 dark:text-white">Data Preview</span>
                     {previewData && (
-                      <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full">
+                      <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full font-medium">
                         {previewData.total_rows} rows
                       </span>
                     )}
                   </div>
-                  {showPreviewSection ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                  {showPreviewSection ? <ChevronDown className="w-5 h-5 text-indigo-500" /> : <ChevronRight className="w-5 h-5 text-indigo-500" />}
                 </button>
 
                 {showPreviewSection && (
-                  <div className="p-4">
+                  <div className="p-5">
                     {/* Selection Area */}
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       {/* Measures Selection */}
                       <div>
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          <Calculator className="w-4 h-4 text-blue-500" />
+                          <Calculator className="w-4 h-4 text-indigo-500" />
                           Select Measures
                         </label>
                         {editingModel.measures.length === 0 ? (
-                          <p className="text-xs text-gray-400">No measures available</p>
+                          <p className="text-xs text-gray-400 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">No measures available</p>
                         ) : (
-                          <div className="space-y-1 max-h-32 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-2">
+                          <div className="space-y-1 max-h-32 overflow-y-auto border border-gray-200/60 dark:border-gray-700/60 rounded-xl p-2 bg-white/50 dark:bg-gray-800/50">
                             {editingModel.measures.map(m => (
-                              <label key={m.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 p-1 rounded">
+                              <label key={m.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 p-1.5 rounded-lg transition-colors">
                                 <input
                                   type="checkbox"
                                   checked={previewMeasureIds.includes(m.id)}
@@ -1172,7 +1221,7 @@ export function SemanticModels() {
                                   className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                 />
                                 <span className="text-gray-700 dark:text-gray-300">{m.name}</span>
-                                <span className="text-xs text-gray-400">({m.aggregation})</span>
+                                <span className="text-xs text-indigo-500 dark:text-indigo-400">({m.aggregation})</span>
                               </label>
                             ))}
                           </div>
@@ -1182,20 +1231,20 @@ export function SemanticModels() {
                       {/* Dimensions Selection */}
                       <div>
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          <Columns className="w-4 h-4 text-green-500" />
+                          <Columns className="w-4 h-4 text-purple-500" />
                           Select Dimensions
                         </label>
                         {editingModel.dimensions.length === 0 ? (
-                          <p className="text-xs text-gray-400">No dimensions available</p>
+                          <p className="text-xs text-gray-400 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">No dimensions available</p>
                         ) : (
-                          <div className="space-y-1 max-h-32 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-2">
+                          <div className="space-y-1 max-h-32 overflow-y-auto border border-gray-200/60 dark:border-gray-700/60 rounded-xl p-2 bg-white/50 dark:bg-gray-800/50">
                             {editingModel.dimensions.map(d => (
-                              <label key={d.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 p-1 rounded">
+                              <label key={d.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-purple-50/50 dark:hover:bg-purple-900/20 p-1.5 rounded-lg transition-colors">
                                 <input
                                   type="checkbox"
                                   checked={previewDimensionIds.includes(d.id)}
                                   onChange={() => togglePreviewDimension(d.id)}
-                                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                                 />
                                 <span className="text-gray-700 dark:text-gray-300">{d.name}</span>
                               </label>
@@ -1206,11 +1255,11 @@ export function SemanticModels() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-3 mb-4">
                       <button
                         onClick={fetchPreview}
                         disabled={previewLoading || (previewMeasureIds.length === 0 && previewDimensionIds.length === 0)}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
                         {previewLoading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -1222,7 +1271,7 @@ export function SemanticModels() {
                       {(previewData || previewError) && (
                         <button
                           onClick={clearPreview}
-                          className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          className="px-4 py-2.5 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-xl transition-colors font-medium"
                         >
                           Clear
                         </button>
@@ -1242,13 +1291,13 @@ export function SemanticModels() {
                         {/* Generated SQL */}
                         <div>
                           <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            <Code className="w-4 h-4 text-gray-500" />
+                            <Code className="w-4 h-4 text-indigo-500" />
                             Generated SQL
-                            <span className="text-xs text-gray-400 ml-auto">
-                              Executed in {previewData.execution_time_ms.toFixed(0)}ms
+                            <span className="text-xs text-indigo-600 dark:text-indigo-400 ml-auto bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full">
+                              {previewData.execution_time_ms.toFixed(0)}ms
                             </span>
                           </div>
-                          <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg text-xs overflow-x-auto max-h-24 scrollbar-thin">
+                          <pre className="bg-gray-900 text-gray-100 p-4 rounded-xl text-xs overflow-x-auto max-h-24 scrollbar-thin border border-gray-700">
                             {previewData.sql_generated}
                           </pre>
                         </div>
@@ -1256,34 +1305,34 @@ export function SemanticModels() {
                         {/* Data Table */}
                         <div>
                           <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            <Table2 className="w-4 h-4 text-gray-500" />
+                            <Table2 className="w-4 h-4 text-purple-500" />
                             Results
-                            <span className="text-xs text-gray-400">
-                              ({previewData.total_rows} rows, showing {previewData.rows.length})
+                            <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded-full">
+                              {previewData.total_rows} rows, showing {previewData.rows.length}
                             </span>
                           </div>
-                          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                          <div className="border border-gray-200/60 dark:border-gray-700/60 rounded-xl overflow-hidden">
                             <div className="overflow-x-auto max-h-64">
                               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
+                                <thead className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 sticky top-0">
                                   <tr>
                                     {previewData.columns.map((col, idx) => (
                                       <th
                                         key={idx}
-                                        className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                                        className="px-4 py-3 text-left text-xs font-semibold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider whitespace-nowrap"
                                       >
                                         {col}
                                       </th>
                                     ))}
                                   </tr>
                                 </thead>
-                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <tbody className="bg-white/80 dark:bg-gray-800/80 divide-y divide-gray-100 dark:divide-gray-700/50">
                                   {previewData.rows.map((row, rowIdx) => (
-                                    <tr key={rowIdx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                    <tr key={rowIdx} className="hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-colors">
                                       {previewData.columns.map((col, colIdx) => (
                                         <td
                                           key={colIdx}
-                                          className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"
+                                          className="px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"
                                         >
                                           {row[col] !== null && row[col] !== undefined
                                             ? typeof row[col] === 'number'
@@ -1312,33 +1361,39 @@ export function SemanticModels() {
 
       {/* Add Measure Modal */}
       {showMeasureModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add Measure</h3>
-              <button onClick={() => setShowMeasureModal(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl shadow-indigo-500/20 w-full max-w-md overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <Calculator className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Add Measure</h3>
+              </div>
+              <button onClick={() => setShowMeasureModal(false)} className="text-white/80 hover:text-white p-1 hover:bg-white/10 rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name *</label>
                 <input
                   type="text"
                   value={newMeasure.name}
                   onChange={(e) => setNewMeasure({ ...newMeasure, name: e.target.value })}
                   placeholder="e.g., Total Revenue"
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Column *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Column *</label>
                 <select
                   value={newMeasure.column_name}
                   onChange={(e) => setNewMeasure({ ...newMeasure, column_name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
                 >
                   <option value="">Select column...</option>
                   {columns.map(c => (
@@ -1348,11 +1403,11 @@ export function SemanticModels() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Aggregation</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Aggregation</label>
                 <select
                   value={newMeasure.aggregation}
                   onChange={(e) => setNewMeasure({ ...newMeasure, aggregation: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
                 >
                   {AGG_OPTIONS.map(o => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -1360,17 +1415,17 @@ export function SemanticModels() {
                 </select>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
+              <div className="flex justify-end gap-3 pt-4">
                 <button
                   onClick={() => setShowMeasureModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                  className="px-4 py-2.5 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-xl font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={addMeasure}
                   disabled={!newMeasure.name || !newMeasure.column_name}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                  className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 disabled:opacity-50 transition-all"
                 >
                   Add Measure
                 </button>
@@ -1382,33 +1437,39 @@ export function SemanticModels() {
 
       {/* Add Dimension Modal */}
       {showDimensionModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add Dimension</h3>
-              <button onClick={() => setShowDimensionModal(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl shadow-purple-500/20 w-full max-w-md overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <Columns className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Add Dimension</h3>
+              </div>
+              <button onClick={() => setShowDimensionModal(false)} className="text-white/80 hover:text-white p-1 hover:bg-white/10 rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name *</label>
                 <input
                   type="text"
                   value={newDimension.name}
                   onChange={(e) => setNewDimension({ ...newDimension, name: e.target.value })}
                   placeholder="e.g., Product Category"
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Column *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Column *</label>
                 <select
                   value={newDimension.column_name}
                   onChange={(e) => setNewDimension({ ...newDimension, column_name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
                 >
                   <option value="">Select column...</option>
                   {columns.map(c => (
@@ -1417,17 +1478,17 @@ export function SemanticModels() {
                 </select>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
+              <div className="flex justify-end gap-3 pt-4">
                 <button
                   onClick={() => setShowDimensionModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                  className="px-4 py-2.5 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-xl font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={addDimension}
                   disabled={!newDimension.name || !newDimension.column_name}
-                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+                  className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-fuchsia-700 shadow-lg shadow-purple-500/25 disabled:opacity-50 transition-all"
                 >
                   Add Dimension
                 </button>
@@ -1439,25 +1500,31 @@ export function SemanticModels() {
 
       {/* Add Join Modal */}
       {showJoinModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add Relationship</h3>
-              <button onClick={() => setShowJoinModal(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl shadow-fuchsia-500/20 w-full max-w-md overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <GitBranch className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Add Relationship</h3>
+              </div>
+              <button onClick={() => setShowJoinModal(false)} className="text-white/80 hover:text-white p-1 hover:bg-white/10 rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="p-6 space-y-4">
               {/* From Column */}
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   From Column (in {editingModel?.transform_id ? 'transform' : editingModel?.table_name}) *
                 </label>
                 <select
                   value={newJoin.from_column}
                   onChange={(e) => setNewJoin({ ...newJoin, from_column: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-fuchsia-500/50 focus:border-fuchsia-500 transition-all"
                 >
                   <option value="">Select column...</option>
                   {columns.map(c => (
@@ -1468,7 +1535,7 @@ export function SemanticModels() {
 
               {/* Join Target Type Selector */}
               <div>
-                <label className="block text-sm font-medium mb-2">Join To *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Join To *</label>
                 <div className="flex gap-2 mb-3">
                   <button
                     type="button"
@@ -1477,10 +1544,10 @@ export function SemanticModels() {
                       setNewJoin({ ...newJoin, to_table: '', to_transform_id: '', to_column: '' })
                       setJoinTableColumns([])
                     }}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border transition-all ${
                       joinSourceType === 'transform'
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                        : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        ? 'border-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 shadow-sm'
+                        : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-fuchsia-300'
                     }`}
                   >
                     <Wand2 className="w-4 h-4" />
@@ -1493,10 +1560,10 @@ export function SemanticModels() {
                       setNewJoin({ ...newJoin, to_table: '', to_transform_id: '', to_column: '' })
                       setJoinTableColumns([])
                     }}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border transition-all ${
                       joinSourceType === 'table'
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                        : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        ? 'border-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 shadow-sm'
+                        : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-fuchsia-300'
                     }`}
                   >
                     <Table2 className="w-4 h-4" />
@@ -1512,7 +1579,7 @@ export function SemanticModels() {
                       setNewJoin({ ...newJoin, to_transform_id: e.target.value, to_column: '' })
                       if (e.target.value) fetchJoinTransformColumns(e.target.value)
                     }}
-                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-fuchsia-500/50 focus:border-fuchsia-500 transition-all"
                   >
                     <option value="">Select transform...</option>
                     {transforms
@@ -1531,7 +1598,7 @@ export function SemanticModels() {
                       setNewJoin({ ...newJoin, to_table: e.target.value, to_column: '' })
                       if (e.target.value) fetchJoinTableColumns(e.target.value)
                     }}
-                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-fuchsia-500/50 focus:border-fuchsia-500 transition-all"
                   >
                     <option value="">Select table...</option>
                     {tables.filter(t => t.name !== editingModel?.table_name).map(t => (
@@ -1544,11 +1611,11 @@ export function SemanticModels() {
               {/* To Column - shown when target is selected */}
               {(newJoin.to_table || newJoin.to_transform_id) && (
                 <div>
-                  <label className="block text-sm font-medium mb-1">To Column *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">To Column *</label>
                   <select
                     value={newJoin.to_column}
                     onChange={(e) => setNewJoin({ ...newJoin, to_column: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-fuchsia-500/50 focus:border-fuchsia-500 transition-all"
                   >
                     <option value="">Select column...</option>
                     {joinTableColumns.map(c => (
@@ -1559,11 +1626,11 @@ export function SemanticModels() {
               )}
 
               <div>
-                <label className="block text-sm font-medium mb-1">Join Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Join Type</label>
                 <select
                   value={newJoin.join_type}
                   onChange={(e) => setNewJoin({ ...newJoin, join_type: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-fuchsia-500/50 focus:border-fuchsia-500 transition-all"
                 >
                   {JOIN_TYPES.map(j => (
                     <option key={j.value} value={j.value}>{j.label}</option>
@@ -1571,7 +1638,7 @@ export function SemanticModels() {
                 </select>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
+              <div className="flex justify-end gap-3 pt-4">
                 <button
                   onClick={() => {
                     setShowJoinModal(false)
@@ -1579,14 +1646,14 @@ export function SemanticModels() {
                     setJoinSourceType('transform')
                     setNewJoin({ from_column: '', to_table: '', to_transform_id: '', to_column: '', join_type: 'left' })
                   }}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                  className="px-4 py-2.5 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-xl font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={addJoin}
                   disabled={!newJoin.from_column || !newJoin.to_column || (joinSourceType === 'table' ? !newJoin.to_table : !newJoin.to_transform_id)}
-                  className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50"
+                  className="px-5 py-2.5 bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white rounded-xl font-medium hover:from-fuchsia-700 hover:to-pink-700 shadow-lg shadow-fuchsia-500/25 disabled:opacity-50 transition-all"
                 >
                   Add Relationship
                 </button>

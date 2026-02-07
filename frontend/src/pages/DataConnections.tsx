@@ -426,7 +426,7 @@ export function DataConnections() {
           value={connectionName}
           onChange={(e) => setConnectionName(e.target.value)}
           placeholder={`My ${selectedFileType.toUpperCase()} Data`}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
         />
       </div>
 
@@ -437,12 +437,12 @@ export function DataConnections() {
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={`
-          border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
+          border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-200
           ${isDragging
-            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 scale-[1.02]'
             : uploadedFile
-              ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-              : 'border-gray-300 dark:border-gray-600 hover:border-primary-400'
+              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+              : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10'
           }
         `}
       >
@@ -455,9 +455,11 @@ export function DataConnections() {
         />
 
         {uploadedFile ? (
-          <div className="space-y-2">
-            <FileSpreadsheet className="w-12 h-12 mx-auto text-green-500" />
-            <p className="font-medium text-gray-900 dark:text-white">{uploadedFile.name}</p>
+          <div className="space-y-3">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/25">
+              <FileSpreadsheet className="w-7 h-7 text-white" />
+            </div>
+            <p className="font-semibold text-gray-900 dark:text-white">{uploadedFile.name}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {(uploadedFile.size / 1024).toFixed(1)} KB
             </p>
@@ -466,15 +468,17 @@ export function DataConnections() {
                 e.stopPropagation()
                 setUploadedFile(null)
               }}
-              className="text-sm text-red-500 hover:text-red-600"
+              className="text-sm text-red-500 hover:text-red-600 font-medium"
             >
-              Remove
+              Remove file
             </button>
           </div>
         ) : (
-          <div className="space-y-2">
-            <Upload className="w-12 h-12 mx-auto text-gray-400" />
-            <p className="text-gray-600 dark:text-gray-300">
+          <div className="space-y-3">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto shadow-lg shadow-indigo-500/25">
+              <Upload className="w-7 h-7 text-white" />
+            </div>
+            <p className="text-gray-700 dark:text-gray-200 font-medium">
               Drag & drop your {selectedFileType.toUpperCase()} file here
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -494,7 +498,7 @@ export function DataConnections() {
             <select
               value={delimiter}
               onChange={(e) => setDelimiter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
             >
               <option value=",">Comma (,)</option>
               <option value=";">Semicolon (;)</option>
@@ -503,12 +507,12 @@ export function DataConnections() {
             </select>
           </div>
           <div className="flex items-center">
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={hasHeader}
                 onChange={(e) => setHasHeader(e.target.checked)}
-                className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
+                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
               />
               <span className="text-sm text-gray-700 dark:text-gray-300">
                 First row is header
@@ -527,7 +531,7 @@ export function DataConnections() {
           <select
             value={selectedSheet}
             onChange={(e) => setSelectedSheet(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
           >
             {previewData.sheets.map(sheet => (
               <option key={sheet} value={sheet}>{sheet}</option>
@@ -550,15 +554,17 @@ export function DataConnections() {
           value={connectionName}
           onChange={(e) => setConnectionName(e.target.value)}
           placeholder="My Data"
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
         />
       </div>
 
       {/* File Info */}
-      <div className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-        <FileSpreadsheet className="w-8 h-8 text-primary-500" />
+      <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+          <FileSpreadsheet className="w-6 h-6 text-white" />
+        </div>
         <div>
-          <p className="font-medium text-gray-900 dark:text-white">{uploadedFile?.name}</p>
+          <p className="font-semibold text-gray-900 dark:text-white">{uploadedFile?.name}</p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {previewData?.row_count.toLocaleString()} rows, {previewData?.columns.length} columns
           </p>
@@ -570,25 +576,25 @@ export function DataConnections() {
         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
           Column Types
         </h4>
-        <div className="max-h-48 overflow-auto border border-gray-200 dark:border-gray-600 rounded-lg">
+        <div className="max-h-48 overflow-auto border border-gray-200 dark:border-gray-600 rounded-xl">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
+            <thead className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 sticky top-0">
               <tr>
-                <th className="px-3 py-2 text-left text-gray-600 dark:text-gray-300">Column</th>
-                <th className="px-3 py-2 text-left text-gray-600 dark:text-gray-300">Type</th>
+                <th className="px-4 py-3 text-left text-gray-700 dark:text-gray-200 font-medium">Column</th>
+                <th className="px-4 py-3 text-left text-gray-700 dark:text-gray-200 font-medium">Type</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
               {columnConfig.map((col, index) => (
-                <tr key={col.name} className="bg-white dark:bg-gray-800">
-                  <td className="px-3 py-2 text-gray-900 dark:text-white font-mono text-xs">
+                <tr key={col.name} className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <td className="px-4 py-2.5 text-gray-900 dark:text-white font-mono text-xs">
                     {col.original_name}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-2.5">
                     <select
                       value={col.type}
                       onChange={(e) => updateColumnType(index, e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
                     >
                       {SQL_TYPES.map(type => (
                         <option key={type} value={type}>{type}</option>
@@ -607,14 +613,14 @@ export function DataConnections() {
         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
           Data Preview (first 10 rows)
         </h4>
-        <div className="overflow-auto border border-gray-200 dark:border-gray-600 rounded-lg max-h-64">
+        <div className="overflow-auto border border-gray-200 dark:border-gray-600 rounded-xl max-h-64">
           <table className="w-full text-xs">
-            <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
+            <thead className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 sticky top-0">
               <tr>
                 {previewData?.columns.map(col => (
                   <th
                     key={col.name}
-                    className="px-3 py-2 text-left text-gray-600 dark:text-gray-300 whitespace-nowrap"
+                    className="px-4 py-3 text-left text-gray-700 dark:text-gray-200 font-medium whitespace-nowrap"
                   >
                     {col.original_name}
                   </th>
@@ -623,11 +629,11 @@ export function DataConnections() {
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
               {previewData?.sample_rows.map((row, rowIndex) => (
-                <tr key={rowIndex} className="bg-white dark:bg-gray-800">
+                <tr key={rowIndex} className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   {previewData.columns.map(col => (
                     <td
                       key={col.name}
-                      className="px-3 py-2 text-gray-900 dark:text-white whitespace-nowrap max-w-xs truncate"
+                      className="px-4 py-2.5 text-gray-900 dark:text-white whitespace-nowrap max-w-xs truncate"
                       title={String(row[col.original_name] ?? '')}
                     >
                       {row[col.original_name] === null || row[col.original_name] === undefined
@@ -645,59 +651,69 @@ export function DataConnections() {
   )
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 via-white to-indigo-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-indigo-950/20">
       {/* Header */}
-      <header className="px-8 py-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-md bg-primary-500 flex items-center justify-center">
-                <Database className="w-5 h-5 text-white" />
-              </div>
+      <div className="px-6 lg:px-8 py-6 border-b border-gray-200/60 dark:border-gray-700/60 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto">
+          {/* Title Row */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/25">
+              <Database className="w-7 h-7 text-white" />
+            </div>
+            <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Data Connections
               </h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                Connect to your databases and data sources
+              </p>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 ml-13">
-              Connect to your databases and data sources
-            </p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative">
+
+          {/* Controls Row */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search connections..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 pr-4 py-2.5 w-64 bg-gray-100 dark:bg-gray-700 border-0 rounded-md text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
               />
             </div>
+
+            <div className="flex-1 hidden sm:block" />
+
+            {/* Add Connection Button */}
             <button
               onClick={openModal}
-              className="flex items-center gap-2 px-5 py-2.5 bg-primary-500 text-white rounded-md font-medium hover:bg-primary-600 transition-colors"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all"
             >
               <Plus className="w-5 h-5" />
               New Connection
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Connections Grid */}
-      <div className="flex-1 overflow-auto p-8">
+      <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {loading ? (
             <div className="flex items-center justify-center h-80">
               <div className="text-center">
-                <Loader2 className="w-10 h-10 animate-spin text-primary-500 mx-auto mb-4" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                  <Loader2 className="w-8 h-8 animate-spin text-white" />
+                </div>
                 <p className="text-gray-500 dark:text-gray-400">Loading connections...</p>
               </div>
             </div>
           ) : filteredConnections.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-80 text-center">
-              <div className="w-20 h-20 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-6">
-                <Database className="w-10 h-10 text-gray-400" />
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center mb-6 shadow-lg shadow-purple-500/25">
+                <Database className="w-10 h-10 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                 No connections yet
@@ -707,86 +723,96 @@ export function DataConnections() {
               </p>
               <button
                 onClick={openModal}
-                className="px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-medium hover:opacity-90 transition-opacity"
+                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all"
               >
                 Add Connection
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {filteredConnections.map((connection) => {
                 const typeInfo = connectionTypes.find((t) => t.id === connection.type)
                 const isFileConnection = ['csv', 'excel'].includes(connection.type)
                 return (
                   <div
                     key={connection.id}
-                    className="group relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl hover:shadow-primary-500/10 hover:border-primary-300 dark:hover:border-primary-600 transition-all duration-300"
+                    className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-5 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
                   >
-                    <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 rounded-xl bg-primary-500/10 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                         {typeInfo ? (
-                          <typeInfo.icon className="w-8 h-8" style={{ color: typeInfo.color }} />
+                          <typeInfo.icon className="w-6 h-6 text-white" />
                         ) : (
-                          <Database className="w-8 h-8 text-gray-400" />
+                          <Database className="w-6 h-6 text-white" />
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-1 truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                          {connection.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-3">
-                          {typeInfo?.name}
-                          {connection.host && ` • ${connection.host}`}
-                          {connection.database && ` • ${connection.database}`}
-                        </p>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          {connection.status === 'connected' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-full">
-                              <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                              Connected
-                            </span>
-                          ) : connection.status === 'error' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium rounded-full">
-                              <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-                              Error
-                            </span>
-                          ) : connection.status === 'syncing' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-medium rounded-full">
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                              Syncing
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-full">
-                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-                              Disconnected
-                            </span>
-                          )}
-                          {isFileConnection && connection.additional_config?.row_count !== undefined && (
-                            <span className="text-xs text-gray-400">
-                              {connection.additional_config.row_count.toLocaleString()} rows
-                            </span>
-                          )}
-                          {connection.tables_count !== undefined && (
-                            <span className="text-xs text-gray-400">
-                              {connection.tables_count} table{connection.tables_count !== 1 ? 's' : ''}
-                            </span>
-                          )}
-                        </div>
+                      {connection.status === 'connected' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium rounded-full">
+                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                          Connected
+                        </span>
+                      ) : connection.status === 'error' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium rounded-full">
+                          <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                          Error
+                        </span>
+                      ) : connection.status === 'syncing' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-medium rounded-full">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          Syncing
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-full">
+                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                          Pending
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 mb-4">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-base mb-1 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        {connection.name}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-3">
+                        {typeInfo?.name}
+                        {connection.host && ` • ${connection.host}`}
+                      </p>
+
+                      {/* Info badges */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {connection.database && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-medium rounded-md">
+                            <Database className="w-3 h-3" />
+                            {connection.database}
+                          </span>
+                        )}
+                        {isFileConnection && connection.additional_config?.row_count !== undefined && (
+                          <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-md">
+                            {connection.additional_config.row_count.toLocaleString()} rows
+                          </span>
+                        )}
+                        {connection.tables_count !== undefined && (
+                          <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-md">
+                            {connection.tables_count} table{connection.tables_count !== 1 ? 's' : ''}
+                          </span>
+                        )}
                       </div>
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-700 mt-auto">
                       <button
                         onClick={() => testSavedConnection(connection.id)}
-                        className="flex-1 px-3 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                        className="flex-1 px-3 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
                       >
-                        Test Connection
+                        Test
                       </button>
                       <button
                         onClick={() => deleteConnection(connection.id)}
                         disabled={deleting === connection.id}
-                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-500 transition-colors disabled:opacity-50"
+                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
                       >
                         {deleting === connection.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -805,10 +831,10 @@ export function DataConnections() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden border border-gray-200/50 dark:border-gray-700/50">
             {/* Modal Header */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-indigo-900/20 dark:to-purple-900/20">
               <div className="flex items-center gap-4">
                 {(modalStep === 'postgresql-form' || modalStep === 'mysql-form' || modalStep === 'mongodb-form' || modalStep === 'file-upload' || modalStep === 'file-preview') && (
                   <button
@@ -819,11 +845,14 @@ export function DataConnections() {
                         setModalStep('select-type')
                       }
                     }}
-                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                    className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
                     <ArrowLeft className="w-5 h-5 text-gray-500" />
                   </button>
                 )}
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                  <Database className="w-5 h-5 text-white" />
+                </div>
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     {modalStep === 'select-type' && 'New Connection'}
@@ -833,7 +862,7 @@ export function DataConnections() {
                     {modalStep === 'file-upload' && `Upload ${selectedFileType.toUpperCase()} File`}
                     {modalStep === 'file-preview' && 'Preview & Import'}
                   </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                     {modalStep === 'select-type' && 'Select a data source type to connect'}
                     {(modalStep === 'postgresql-form' || modalStep === 'mysql-form' || modalStep === 'mongodb-form') && 'Enter your database connection details'}
                     {modalStep === 'file-upload' && 'Upload your file to import data'}
@@ -844,7 +873,7 @@ export function DataConnections() {
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 overflow-auto max-h-[calc(80vh-200px)]">
+            <div className="p-6 overflow-auto max-h-[calc(85vh-200px)]">
               {modalStep === 'select-type' ? (
                 /* Step 1: Type Selection */
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -852,10 +881,12 @@ export function DataConnections() {
                     <button
                       key={type.id}
                       onClick={() => selectConnectionType(type.id)}
-                      className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 transition-colors"
+                      className="group flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-all duration-200"
                     >
-                      <type.icon className="w-8 h-8" style={{ color: type.color }} />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <type.icon className="w-6 h-6" style={{ color: type.color }} />
+                      </div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                         {type.name}
                       </span>
                     </button>
@@ -878,28 +909,28 @@ export function DataConnections() {
                         modalStep === 'mongodb-form' ? "My MongoDB Database" :
                         "My PostgreSQL Database"
                       }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
                     />
                   </div>
 
                   {/* Input Mode Toggle */}
-                  <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-xl">
                     <button
                       onClick={() => setInputMode('connection-string')}
-                      className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                         inputMode === 'connection-string'
-                          ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow'
-                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-600/50'
                       }`}
                     >
                       Connection String
                     </button>
                     <button
                       onClick={() => setInputMode('individual-fields')}
-                      className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                         inputMode === 'individual-fields'
-                          ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow'
-                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-600/50'
                       }`}
                     >
                       Individual Fields
@@ -923,7 +954,7 @@ export function DataConnections() {
                             ? "mongodb://user:password@localhost:27017/database"
                             : "postgresql://user:password@localhost:5432/database"
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 font-mono text-sm"
                       />
                       <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                         {modalStep === 'mysql-form'
@@ -962,7 +993,7 @@ export function DataConnections() {
                             value={host}
                             onChange={(e) => setHost(e.target.value)}
                             placeholder={modalStep === 'mongodb-form' && isSrv ? "cluster0.xxxxx.mongodb.net" : "localhost"}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
                           />
                         </div>
                         {!(modalStep === 'mongodb-form' && isSrv) && (
@@ -979,7 +1010,7 @@ export function DataConnections() {
                                 modalStep === 'mongodb-form' ? "27017" :
                                 "5432"
                               }
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
                             />
                           </div>
                         )}
@@ -994,7 +1025,7 @@ export function DataConnections() {
                           value={database}
                           onChange={(e) => setDatabase(e.target.value)}
                           placeholder="mydatabase"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
                         />
                       </div>
 
@@ -1012,7 +1043,7 @@ export function DataConnections() {
                               modalStep === 'mongodb-form' ? "admin" :
                               "postgres"
                             }
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
                           />
                         </div>
                         <div>
@@ -1025,7 +1056,7 @@ export function DataConnections() {
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
                               placeholder="********"
-                              className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
                             />
                             <button
                               type="button"
@@ -1049,7 +1080,7 @@ export function DataConnections() {
                             value={authSource}
                             onChange={(e) => setAuthSource(e.target.value)}
                             placeholder="admin"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
                           />
                           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                             The database where the user is defined (usually "admin")
@@ -1061,25 +1092,31 @@ export function DataConnections() {
 
                   {/* Test Result */}
                   {testResult && (
-                    <div className={`p-4 rounded-lg ${
+                    <div className={`p-4 rounded-xl ${
                       testResult.success
-                        ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
-                        : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                        ? 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800'
+                        : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border border-red-200 dark:border-red-800'
                     }`}>
-                      <div className="flex items-center gap-2">
-                        {testResult.success ? (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-500" />
-                        )}
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          testResult.success
+                            ? 'bg-emerald-500 shadow-lg shadow-emerald-500/25'
+                            : 'bg-red-500 shadow-lg shadow-red-500/25'
+                        }`}>
+                          {testResult.success ? (
+                            <CheckCircle className="w-4 h-4 text-white" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-white" />
+                          )}
+                        </div>
                         <span className={`font-medium ${
-                          testResult.success ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
+                          testResult.success ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'
                         }`}>
                           {testResult.message}
                         </span>
                       </div>
                       {testResult.success && testResult.tables_count !== undefined && (
-                        <p className="mt-2 text-sm text-green-600 dark:text-green-400">
+                        <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400 ml-11">
                           Found {testResult.tables_count} {modalStep === 'mongodb-form' ? 'collections' : 'tables'}
                         </p>
                       )}
@@ -1094,10 +1131,10 @@ export function DataConnections() {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-between bg-gray-50/50 dark:bg-gray-900/50">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                className="px-5 py-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl font-medium transition-colors"
               >
                 Cancel
               </button>
@@ -1111,7 +1148,7 @@ export function DataConnections() {
                       'postgresql'
                     )}
                     disabled={testing || (inputMode === 'connection-string' ? !connectionString : !host || !database)}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-5 py-2.5 border border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 rounded-xl font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {testing && <Loader2 className="w-4 h-4 animate-spin" />}
                     Test Connection
@@ -1123,7 +1160,7 @@ export function DataConnections() {
                       'postgresql'
                     )}
                     disabled={saving || !connectionName || (inputMode === 'connection-string' ? !connectionString : !host || !database)}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                     Save Connection
@@ -1135,7 +1172,7 @@ export function DataConnections() {
                 <button
                   onClick={uploadAndPreview}
                   disabled={uploading || !uploadedFile}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
                   <Table className="w-4 h-4" />
@@ -1147,7 +1184,7 @@ export function DataConnections() {
                 <button
                   onClick={confirmUpload}
                   disabled={saving || !connectionName}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                   <CheckCircle className="w-4 h-4" />

@@ -21,7 +21,9 @@ import {
   Minus,
   Table,
   FileCode,
+  Home,
 } from 'lucide-react';
+import { PageHeader, Badge } from '@/components/ui/glass';
 import {
   TimeIntelligenceFunction,
   TimeIntelligenceResult,
@@ -254,21 +256,16 @@ const TimeIntelligence: React.FC = () => {
       });
 
       // Convert results back to camelCase for frontend
-      console.log('API Response:', response.data);
-      const convertedResults = (response.data.results || []).map((r: any) => {
-        console.log('Raw result item:', r);
-        return {
-          functionId: r.function_id,
-          value: r.value,
-          comparisonValue: r.comparison_value,
-          pctChange: r.pct_change,
-          periodStart: r.period_start,
-          periodEnd: r.period_end,
-          comparisonPeriodStart: r.comparison_period_start,
-          comparisonPeriodEnd: r.comparison_period_end,
-        };
-      });
-      console.log('Converted results:', convertedResults);
+      const convertedResults = (response.data.results || []).map((r: any) => ({
+        functionId: r.function_id,
+        value: r.value,
+        comparisonValue: r.comparison_value,
+        pctChange: r.pct_change,
+        periodStart: r.period_start,
+        periodEnd: r.period_end,
+        comparisonPeriodStart: r.comparison_period_start,
+        comparisonPeriodEnd: r.comparison_period_end,
+      }));
 
       setResults(convertedResults);
       setGeneratedSql(response.data.query || '');
@@ -306,36 +303,39 @@ const TimeIntelligence: React.FC = () => {
 
   return (
     <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Calculator className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-900">Time Intelligence</h1>
-                <p className="text-sm text-gray-500">
-                  Create time-based calculations like YTD, MTD, rolling averages, and comparisons
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={handleExecute}
-              disabled={isExecuting || functions.length === 0 || !selectedTable}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isExecuting ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
-              Execute
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Modern Minimal Header */}
+      <PageHeader
+        variant="minimal"
+        gradient="rose"
+        size="sm"
+        icon={<Calculator className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
+        title="Time Intelligence"
+        subtitle="Create time-based calculations like YTD, MTD, rolling averages, and comparisons"
+        breadcrumbs={[
+          { label: 'Home', href: '/', icon: <Home className="w-3.5 h-3.5" /> },
+          { label: 'Analytics', href: '/insights' },
+          { label: 'Time Intelligence' }
+        ]}
+        badge={
+          functions.length > 0 ? (
+            <Badge variant="primary" size="sm">{functions.length} functions</Badge>
+          ) : null
+        }
+        actions={
+          <button
+            onClick={handleExecute}
+            disabled={isExecuting || functions.length === 0 || !selectedTable}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-xl font-medium text-sm shadow-lg shadow-rose-500/25 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            {isExecuting ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">Execute</span>
+          </button>
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
         <div className="grid grid-cols-12 gap-6">

@@ -23,7 +23,9 @@ import {
   X,
   UserPlus,
   Clock,
+  Home,
 } from 'lucide-react';
+import { PageHeader, Badge } from '@/components/ui/glass';
 import {
   Workspace,
   WorkspaceMember,
@@ -171,28 +173,32 @@ export function Workspaces() {
 
   return (
     <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Workspaces
-              </h1>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Manage team workspaces and collaboration
-              </p>
-            </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              New Workspace
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Modern Gradient Header */}
+      <PageHeader
+        variant="gradient"
+        gradient="cyan"
+        size="md"
+        icon={<Building2 className="w-7 h-7" />}
+        title="Workspaces"
+        subtitle="Manage team workspaces and collaboration"
+        breadcrumbs={[
+          { label: 'Home', href: '/', icon: <Home className="w-3.5 h-3.5" /> },
+          { label: 'Workspaces' }
+        ]}
+        stats={workspaces.length > 0 ? [
+          { label: 'workspaces', value: workspaces.length, icon: <Building2 className="w-4 h-4" /> },
+          { label: 'members', value: workspaces.reduce((acc, w) => acc + w.member_count, 0), icon: <Users className="w-4 h-4" /> },
+        ] : undefined}
+        actions={
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-sm text-white rounded-xl font-medium text-sm border border-white/20 hover:bg-white/30 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">New Workspace</span>
+          </button>
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Error State */}
@@ -217,11 +223,11 @@ export function Workspaces() {
         )}
 
         {!loading && (
-        <div className="flex gap-6">
+        <div className="flex gap-6 h-[calc(100vh-200px)]">
           {/* Sidebar - Workspace List */}
-          <div className="w-80 flex-shrink-0">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="w-80 flex-shrink-0 flex flex-col">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow flex flex-col max-h-full">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -233,7 +239,7 @@ export function Workspaces() {
                   />
                 </div>
               </div>
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              <div className="divide-y divide-gray-200 dark:divide-gray-700 overflow-y-auto flex-1">
                 {filteredWorkspaces.map((workspace) => (
                   <button
                     key={workspace.id}
@@ -280,7 +286,7 @@ export function Workspaces() {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 overflow-y-auto">
             {selectedWorkspace ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
                 {/* Workspace Header */}

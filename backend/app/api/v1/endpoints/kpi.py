@@ -283,6 +283,13 @@ async def calculate_kpi(
     if not conn:
         raise HTTPException(status_code=404, detail="Connection not found")
 
+    # Check if connection is available
+    if conn.status == "disconnected":
+        raise HTTPException(
+            status_code=503,
+            detail=f"Connection '{conn.name}' is disconnected. Please check the connection settings."
+        )
+
     conn_type = conn.type.value if hasattr(conn.type, 'value') else str(conn.type)
     quote = '`' if conn_type == "mysql" else '"'
 
@@ -476,7 +483,14 @@ async def calculate_kpi(
             val = current_result["rows"][0].get("value")
             current_value = float(val) if val is not None else 0.0
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to calculate current value: {str(e)}")
+        error_msg = str(e)
+        # Provide user-friendly error messages for common connection issues
+        if "Connection refused" in error_msg or "Can't connect" in error_msg:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Cannot connect to database '{conn.name}' at {conn.host}:{conn.port}. The database may be offline or unreachable."
+            )
+        raise HTTPException(status_code=500, detail=f"Failed to calculate KPI: {error_msg}")
 
     # Query 2: Previous period value (if date column provided)
     previous_value = None

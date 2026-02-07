@@ -57,6 +57,15 @@ from app.models.performance import (
 from app.models.sharing import (
     SharedLink, SharePermission, ShareInvitation, ShareActivity, Comment
 )
+from app.models.governance import (
+    DataSteward, DataOwnership, DeploymentEnvironment, DeploymentPromotion,
+    LineageNode, LineageEdge, AssetVersion, DataQualityRule, DataQualityCheck,
+    DataQualityScore, SchemaSnapshot, SchemaChange, App, AppInstallation,
+    UserAnalytics, FeatureAdoption, ContentPopularity,
+    DataOwnerType, EnvironmentType, PromotionStatus, LineageNodeType,
+    VersionableType, QualityRuleType, QualitySeverity, QualityCheckStatus,
+    SchemaChangeType, AppStatus
+)
 
 __all__ = [
     # User models
@@ -108,5 +117,13 @@ __all__ = [
     "QueryPerformance", "SlowQueryLog", "DashboardPerformance",
     "SystemMetric", "PerformanceAlert", "CacheStats",
     # Sharing models
-    "SharedLink", "SharePermission", "ShareInvitation", "ShareActivity", "Comment"
+    "SharedLink", "SharePermission", "ShareInvitation", "ShareActivity", "Comment",
+    # Governance models
+    "DataSteward", "DataOwnership", "DeploymentEnvironment", "DeploymentPromotion",
+    "LineageNode", "LineageEdge", "AssetVersion", "DataQualityRule", "DataQualityCheck",
+    "DataQualityScore", "SchemaSnapshot", "SchemaChange", "App", "AppInstallation",
+    "UserAnalytics", "FeatureAdoption", "ContentPopularity",
+    "DataOwnerType", "EnvironmentType", "PromotionStatus", "LineageNodeType",
+    "VersionableType", "QualityRuleType", "QualitySeverity", "QualityCheckStatus",
+    "SchemaChangeType", "AppStatus"
 ]

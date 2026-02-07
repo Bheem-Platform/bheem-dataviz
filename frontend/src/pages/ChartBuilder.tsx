@@ -2757,228 +2757,235 @@ export function ChartBuilder() {
   // === RECIPES VIEW (Landing) ===
   if (viewMode === 'recipes') {
     return (
-      <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-        {/* Header */}
-        <header className="px-8 py-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-md bg-primary-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-                  <BarChart3 className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    Charts
-                  </h1>
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Visualize your data
-                  </p>
-                </div>
+      <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-950">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            {/* Title Row */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/25">
+                <BarChart3 className="w-7 h-7 text-white" />
               </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Chart Builder</h1>
+                <p className="text-gray-500 dark:text-gray-400">Create stunning visualizations from your data</p>
+              </div>
+            </div>
+
+            {/* Controls Row */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Data Source Toggle */}
+              <div className="flex items-center bg-white dark:bg-gray-800 rounded-xl p-1 shadow-sm border border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setDataSourceType('transforms')}
+                  className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex-1 sm:flex-none ${
+                    dataSourceType === 'transforms'
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Wand2 className="w-4 h-4" />
+                  Transforms
+                </button>
+                <button
+                  onClick={() => setDataSourceType('models')}
+                  className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex-1 sm:flex-none ${
+                    dataSourceType === 'models'
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <GitBranch className="w-4 h-4" />
+                  Models
+                </button>
+                <button
+                  onClick={() => setDataSourceType('saved')}
+                  className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex-1 sm:flex-none ${
+                    dataSourceType === 'saved'
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Star className="w-4 h-4" />
+                  Saved
+                </button>
+              </div>
+
+              {/* Spacer */}
+              <div className="flex-1 hidden sm:block" />
+
+              {/* Search & Actions */}
               <div className="flex items-center gap-3">
-                {/* Data Source Toggle */}
-                <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
-                  <button
-                    onClick={() => setDataSourceType('transforms')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      dataSourceType === 'transforms'
-                        ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Wand2 className="w-4 h-4" />
-                    Transforms
-                  </button>
-                  <button
-                    onClick={() => setDataSourceType('models')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      dataSourceType === 'models'
-                        ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <GitBranch className="w-4 h-4" />
-                    Models
-                  </button>
-                  <button
-                    onClick={() => setDataSourceType('saved')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      dataSourceType === 'saved'
-                        ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Save className="w-4 h-4" />
-                    Saved
-                  </button>
-                </div>
-                <div className="relative">
+                <div className="relative flex-1 sm:flex-none">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     placeholder={dataSourceType === 'transforms' ? 'Search transforms...' : dataSourceType === 'models' ? 'Search models...' : 'Search saved charts...'}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-4 py-2.5 w-64 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full sm:w-64 pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
                   />
                 </div>
+
                 <button
                   onClick={fetchAllData}
                   disabled={loading}
-                  className="p-2.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                  className="p-2.5 bg-white dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0"
                 >
                   <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                 </button>
+
                 {dataSourceType !== 'saved' && (
                   <a
                     href={dataSourceType === 'transforms' ? '/transforms' : '/models'}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-md font-medium hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25 whitespace-nowrap flex-shrink-0"
                   >
                     <Plus className="w-4 h-4" />
-                    New {dataSourceType === 'transforms' ? 'Transform' : 'Model'}
+                    <span className="hidden sm:inline">New {dataSourceType === 'transforms' ? 'Transform' : 'Model'}</span>
+                    <span className="sm:hidden">New</span>
                   </a>
                 )}
               </div>
             </div>
           </div>
-        </header>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto p-8">
-          <div className="max-w-7xl mx-auto">
-            {loading ? (
-              <div className="flex items-center justify-center h-80">
-                <div className="text-center">
-                  <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mx-auto mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">Loading {dataSourceType}...</p>
-                </div>
-              </div>
-            ) : dataSourceType === 'models' ? (
-              // === SEMANTIC MODELS VIEW ===
-              filteredModels.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-80 text-center">
-                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 flex items-center justify-center mb-6">
-                    <GitBranch className="w-12 h-12 text-indigo-500" />
+          {/* Content */}
+          {loading ? (
+            <div className="bento-card py-16">
+              <div className="text-center">
+                <div className="relative inline-block">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center animate-pulse">
+                    <BarChart3 className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  <div className="absolute inset-0 rounded-2xl bg-indigo-500/20 blur-xl animate-pulse" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mt-6 mb-2">
+                  Loading {dataSourceType}...
+                </h3>
+                <p className="text-gray-500">Fetching your data sources</p>
+              </div>
+            </div>
+          ) : dataSourceType === 'models' ? (
+            // === SEMANTIC MODELS VIEW ===
+            filteredModels.length === 0 ? (
+              <div className="bento-card py-16">
+                <div className="text-center max-w-md mx-auto">
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-100 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 flex items-center justify-center mx-auto mb-6">
+                    <GitBranch className="w-10 h-10 text-indigo-500" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                     {searchQuery ? 'No matching models' : 'No semantic models yet'}
                   </h3>
-                  <p className="text-gray-500 dark:text-gray-400 max-w-md mb-6">
+                  <p className="text-gray-500 dark:text-gray-400 mb-8">
                     {searchQuery
                       ? 'Try a different search term'
-                      : 'Create a semantic model to define measures, dimensions, and relationships'}
+                      : 'Create a semantic model to define measures, dimensions, and relationships for your visualizations'}
                   </p>
                   <a
                     href="/models"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25"
                   >
-                    <Sparkles className="w-4 h-4" />
+                    <Sparkles className="w-5 h-5" />
                     Create Your First Model
                   </a>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredModels.map((model) => {
-                    const connection = connections.get(model.connection_id)
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {filteredModels.map((model) => {
+                  const connection = connections.get(model.connection_id)
 
-                    return (
-                      <button
-                        key={model.id}
-                        onClick={() => selectSemanticModel(model)}
-                        className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden text-left hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:-translate-y-1"
-                      >
-                        {/* Model Preview Area */}
-                        <div className="h-44 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-cyan-900/20 relative overflow-hidden">
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-center">
-                              <GitBranch className="w-16 h-16 text-emerald-300 dark:text-emerald-700 mx-auto mb-3" />
-                              <div className="flex items-center justify-center gap-4">
-                                <div className="text-center">
-                                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                                    {model.measures_count}
-                                  </div>
-                                  <div className="text-xs text-emerald-500/70">Measures</div>
-                                </div>
-                                <div className="w-px h-8 bg-emerald-200 dark:bg-emerald-700" />
-                                <div className="text-center">
-                                  <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
-                                    {model.dimensions_count}
-                                  </div>
-                                  <div className="text-xs text-teal-500/70">Dimensions</div>
-                                </div>
-                              </div>
-                            </div>
+                  return (
+                    <button
+                      key={model.id}
+                      onClick={() => selectSemanticModel(model)}
+                      className="bento-card group text-left hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
+                    >
+                      {/* Model Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 flex-shrink-0">
+                            <GitBranch className="w-5 h-5 text-white" />
                           </div>
-
-                          {/* Hover overlay */}
-                          <div className="absolute inset-0 bg-emerald-600/0 group-hover:bg-emerald-600/80 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <span className="px-5 py-2.5 bg-white rounded-xl shadow-xl text-sm font-semibold text-emerald-600 flex items-center gap-2 transform scale-90 group-hover:scale-100 transition-transform">
-                              <BarChart3 className="w-4 h-4" />
-                              Build Charts
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Model Info */}
-                        <div className="p-4">
-                          <h3 className="font-semibold text-gray-900 dark:text-white truncate text-lg group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                            {model.name}
-                          </h3>
-                          {model.description && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-                              {model.description}
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
+                              {model.name}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                              {model.description || `${model.table_name}`}
                             </p>
-                          )}
-                          <div className="flex items-center gap-2 mt-3 flex-wrap">
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs text-gray-600 dark:text-gray-300">
-                              <Table2 className="w-3 h-3" />
-                              {model.table_name}
-                            </span>
-                            {model.joins_count > 0 && (
-                              <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs">
-                                {model.joins_count} joins
-                              </span>
-                            )}
                           </div>
+                        </div>
+                      </div>
+
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-3 gap-2 mb-4 flex-1">
+                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 text-center">
+                          <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                            {model.measures_count}
+                          </div>
+                          <div className="text-xs text-gray-500">Measures</div>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 text-center">
+                          <div className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                            {model.dimensions_count}
+                          </div>
+                          <div className="text-xs text-gray-500">Dimensions</div>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 text-center">
+                          <div className="text-xl font-bold text-violet-600 dark:text-violet-400">
+                            {model.joins_count}
+                          </div>
+                          <div className="text-xs text-gray-500">Joins</div>
+                        </div>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700 mt-auto">
+                        <div className="flex items-center gap-2 min-w-0">
                           {connection && (
-                            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                              <span className="text-xs text-gray-400 flex items-center gap-1">
-                                <Database className="w-3 h-3" />
-                                {connection.name}
-                              </span>
-                            </div>
+                            <span className="text-xs text-gray-400 flex items-center gap-1 truncate">
+                              <Database className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{connection.name}</span>
+                            </span>
                           )}
                         </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              )
+                        <span className="px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg shadow-indigo-500/25 flex-shrink-0">
+                          Build Charts
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )
             ) : dataSourceType === 'saved' ? (
               // === SAVED CHARTS VIEW ===
               filteredSavedCharts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-80 text-center">
-                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center mb-6">
-                    <Save className="w-12 h-12 text-blue-500" />
+                <div className="bento-card py-16">
+                  <div className="text-center max-w-md mx-auto">
+                    <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-100 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 flex items-center justify-center mx-auto mb-6">
+                      <Star className="w-10 h-10 text-indigo-500" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                      {searchQuery ? 'No matching charts' : 'No saved charts yet'}
+                    </h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-8">
+                      {searchQuery
+                        ? 'Try a different search term'
+                        : 'Build charts from transforms or models and save them for quick access'}
+                    </p>
+                    <button
+                      onClick={() => setDataSourceType('transforms')}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25"
+                    >
+                      <Wand2 className="w-5 h-5" />
+                      Build from Transforms
+                    </button>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    {searchQuery ? 'No matching charts' : 'No saved charts yet'}
-                  </h3>
-                  <p className="text-gray-500 dark:text-gray-400 max-w-md mb-6">
-                    {searchQuery
-                      ? 'Try a different search term'
-                      : 'Build charts from transforms or models and save them here'}
-                  </p>
-                  <button
-                    onClick={() => setDataSourceType('transforms')}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25"
-                  >
-                    <Wand2 className="w-4 h-4" />
-                    Build from Transforms
-                  </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                   {filteredSavedCharts.map((chart) => {
                     const connection = connections.get(chart.connection_id)
 
@@ -2986,57 +2993,51 @@ export function ChartBuilder() {
                       <a
                         key={chart.id}
                         href={`/charts/${chart.id}`}
-                        className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden text-left hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 hover:-translate-y-1"
+                        className="bento-card group text-left hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
                       >
+                        {/* Chart Header */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 flex-shrink-0">
+                              <BarChart3 className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="min-w-0">
+                              <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
+                                {chart.name}
+                              </h3>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                {chart.description || `${chart.chart_type} chart`}
+                              </p>
+                            </div>
+                          </div>
+                          {chart.is_favorite && (
+                            <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400 rounded-lg text-xs font-medium flex-shrink-0">
+                              ★
+                            </span>
+                          )}
+                        </div>
+
                         {/* Chart Preview Area */}
-                        <div className="h-44 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 relative overflow-hidden">
-                          {/* Render KPI preview for KPI charts */}
+                        <div className="h-32 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/20 dark:via-purple-900/20 dark:to-pink-900/20 rounded-xl relative overflow-hidden mb-4 flex-1">
                           {chart.chart_type === 'kpi' && chart.chart_config?.kpiValue ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
+                            <div className="absolute inset-0 flex items-center justify-center">
                               <div className="text-center">
-                                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">
                                   {chart.chart_config.kpiValue as string}
                                 </p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                   {chart.chart_config.kpiLabel as string}
                                 </p>
                               </div>
                             </div>
-                          ) : chart.chart_type === 'table' && chart.chart_config?.tableColumns ? (
-                            <div className="absolute inset-0 p-2 bg-white dark:bg-gray-800 overflow-hidden">
-                              <table className="w-full text-xs">
-                                <thead className="bg-gray-50 dark:bg-gray-700">
-                                  <tr>
-                                    {(chart.chart_config.tableColumns as string[]).slice(0, 4).map((col: string) => (
-                                      <th key={col} className="px-2 py-1.5 text-left font-medium text-gray-600 dark:text-gray-300 truncate">
-                                        {col}
-                                      </th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {(chart.chart_config.tableRows as Record<string, any>[])?.slice(0, 6).map((row: Record<string, any>, i: number) => (
-                                    <tr key={i} className={i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}>
-                                      {(chart.chart_config.tableColumns as string[]).slice(0, 4).map((col: string) => (
-                                        <td key={col} className="px-2 py-1 text-gray-700 dark:text-gray-300 truncate max-w-[80px]">
-                                          {row[col] !== null && row[col] !== undefined ? String(row[col]).slice(0, 15) : '—'}
-                                        </td>
-                                      ))}
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                              <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white dark:from-gray-800 to-transparent" />
-                            </div>
                           ) : chart.chart_config && Object.keys(chart.chart_config).length > 0 ? (
-                            <div className="absolute inset-0 p-3">
+                            <div className="absolute inset-0 p-2">
                               <ReactECharts
                                 option={{
                                   ...chart.chart_config,
                                   animation: false,
-                                  // Only add grid for charts that use axis (not pie, donut, gauge, funnel, radar)
                                   ...(!['pie', 'donut', 'gauge', 'funnel', 'radar', 'table'].includes(chart.chart_type?.toLowerCase()) ? {
-                                    grid: { left: 35, right: 15, bottom: 25, top: 15 }
+                                    grid: { left: 30, right: 10, bottom: 20, top: 10 }
                                   } : {}),
                                 }}
                                 style={{ height: '100%', width: '100%' }}
@@ -3046,50 +3047,31 @@ export function ChartBuilder() {
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="text-center">
-                                <BarChart3 className="w-16 h-16 text-blue-300 dark:text-blue-700 mx-auto mb-3" />
-                                <div className="text-sm font-medium text-blue-600 dark:text-blue-400 capitalize">
-                                  {chart.chart_type} Chart
+                                <BarChart3 className="w-10 h-10 text-indigo-200 dark:text-indigo-700 mx-auto mb-1" />
+                                <div className="text-xs font-medium text-indigo-600 dark:text-indigo-400 capitalize">
+                                  {chart.chart_type}
                                 </div>
                               </div>
                             </div>
                           )}
-
-                          {/* Hover overlay */}
-                          <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/80 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <span className="px-5 py-2.5 bg-white rounded-xl shadow-xl text-sm font-semibold text-blue-600 flex items-center gap-2 transform scale-90 group-hover:scale-100 transition-transform">
-                              <BarChart3 className="w-4 h-4" />
-                              View Chart
-                            </span>
-                          </div>
-
-                          {/* Favorite badge */}
-                          {chart.is_favorite && (
-                            <div className="absolute top-3 right-3 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400 rounded-lg text-xs font-medium">
-                              ★ Favorite
-                            </div>
-                          )}
                         </div>
 
-                        {/* Chart Info */}
-                        <div className="p-4">
-                          <h3 className="font-semibold text-gray-900 dark:text-white truncate text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                            {chart.name}
-                          </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                            {chart.description || `${chart.chart_type} visualization`}
-                          </p>
-
-                          <div className="flex flex-wrap items-center gap-2 mt-3">
-                            <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-medium capitalize">
+                        {/* Footer */}
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700 mt-auto">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-medium capitalize flex-shrink-0">
                               {chart.chart_type}
                             </span>
                             {connection && (
-                              <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg text-xs font-medium flex items-center gap-1.5">
-                                <Database className="w-3 h-3" />
-                                {connection.name}
+                              <span className="text-xs text-gray-400 flex items-center gap-1 truncate">
+                                <Database className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{connection.name}</span>
                               </span>
                             )}
                           </div>
+                          <span className="px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg shadow-indigo-500/25 flex-shrink-0">
+                            View
+                          </span>
                         </div>
                       </a>
                     )
@@ -3098,28 +3080,30 @@ export function ChartBuilder() {
               )
             ) : filteredRecipes.length === 0 ? (
               // === TRANSFORMS EMPTY STATE ===
-              <div className="flex flex-col items-center justify-center h-80 text-center">
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 flex items-center justify-center mb-6">
-                  <Wand2 className="w-12 h-12 text-indigo-500" />
+              <div className="bento-card py-16">
+                <div className="text-center max-w-md mx-auto">
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-100 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 flex items-center justify-center mx-auto mb-6">
+                    <Wand2 className="w-10 h-10 text-indigo-500" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                    {searchQuery ? 'No matching recipes' : 'No transform recipes yet'}
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 mb-8">
+                    {searchQuery
+                      ? 'Try a different search term'
+                      : 'Create a transform recipe to filter, aggregate, and visualize your data'}
+                  </p>
+                  <a
+                    href="/transforms"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Create Your First Transform
+                  </a>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  {searchQuery ? 'No matching recipes' : 'No transform recipes yet'}
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 max-w-md mb-6">
-                  {searchQuery
-                    ? 'Try a different search term'
-                    : 'Create a transform recipe to filter, aggregate, and visualize your data'}
-                </p>
-                <a
-                  href="/transforms"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Create Your First Transform
-                </a>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {filteredRecipes.map((recipe) => {
                   const preview = recipePreviews.get(recipe.id)
                   const connection = connections.get(recipe.connection_id)
@@ -3128,21 +3112,38 @@ export function ChartBuilder() {
                     <button
                       key={recipe.id}
                       onClick={() => selectRecipe(recipe)}
-                      className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden text-left hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:-translate-y-1"
+                      className="bento-card group text-left hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
                     >
-                      {/* Chart Preview Area */}
-                      <div className="h-44 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/20 dark:via-purple-900/20 dark:to-pink-900/20 relative overflow-hidden">
+                      {/* Transform Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 flex-shrink-0">
+                            <Wand2 className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
+                              {recipe.name}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                              {recipe.description || `${recipe.source_table}`}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Chart Preview */}
+                      <div className="h-32 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/20 dark:via-purple-900/20 dark:to-pink-900/20 rounded-xl relative overflow-hidden mb-4 flex-1">
                         {preview?.loading ? (
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+                            <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
                           </div>
                         ) : preview?.chart && preview.chart.type !== 'kpi' && preview.chart.type !== 'table' ? (
-                          <div className="absolute inset-0 p-3">
+                          <div className="absolute inset-0 p-2">
                             <ReactECharts
                               option={{
                                 ...preview.chart.option,
                                 animation: false,
-                                grid: { left: 35, right: 15, bottom: 25, top: 15 },
+                                grid: { left: 30, right: 10, bottom: 20, top: 10 },
                               }}
                               style={{ height: '100%', width: '100%' }}
                               opts={{ renderer: 'canvas' }}
@@ -3151,10 +3152,10 @@ export function ChartBuilder() {
                         ) : preview?.chart?.type === 'kpi' ? (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-center">
-                              <div className="text-4xl font-bold text-gray-900 dark:text-white">
+                              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                                 {preview.chart.kpiValue}
                               </div>
-                              <div className="text-sm text-gray-500 mt-1">
+                              <div className="text-xs text-gray-500 mt-1">
                                 {preview.chart.kpiLabel}
                               </div>
                             </div>
@@ -3162,59 +3163,37 @@ export function ChartBuilder() {
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-center">
-                              <BarChart3 className="w-16 h-16 text-indigo-200 dark:text-indigo-700 mx-auto mb-2" />
-                              <p className="text-sm text-indigo-400">
+                              <BarChart3 className="w-10 h-10 text-indigo-200 dark:text-indigo-700 mx-auto mb-1" />
+                              <p className="text-xs text-indigo-400">
                                 {preview?.error ? 'Preview unavailable' : 'Click to visualize'}
                               </p>
                             </div>
                           </div>
                         )}
-
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-indigo-600/0 group-hover:bg-indigo-600/80 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <span className="px-5 py-2.5 bg-white rounded-xl shadow-xl text-sm font-semibold text-indigo-600 flex items-center gap-2 transform scale-90 group-hover:scale-100 transition-transform">
-                            <BarChart3 className="w-4 h-4" />
-                            View Charts
-                          </span>
-                        </div>
                       </div>
 
-                      {/* Recipe Info */}
-                      <div className="p-4">
-                        <h3 className="font-semibold text-gray-900 dark:text-white truncate text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                          {recipe.name}
-                        </h3>
-                        {recipe.description && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-                            {recipe.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-2 mt-3 flex-wrap">
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs text-gray-600 dark:text-gray-300">
-                            <Table2 className="w-3 h-3" />
-                            {recipe.source_table}
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700 mt-auto">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs text-gray-600 dark:text-gray-300 truncate">
+                            <Table2 className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{recipe.source_table}</span>
                           </span>
                           {recipe.steps.length > 0 && (
-                            <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-lg text-xs">
+                            <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-lg text-xs font-medium flex-shrink-0">
                               {recipe.steps.length} steps
                             </span>
                           )}
                         </div>
-                        {connection && (
-                          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                            <span className="text-xs text-gray-400 flex items-center gap-1">
-                              <Database className="w-3 h-3" />
-                              {connection.name}
-                            </span>
-                          </div>
-                        )}
+                        <span className="px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg shadow-indigo-500/25 flex-shrink-0">
+                          View Charts
+                        </span>
                       </div>
                     </button>
                   )
                 })}
               </div>
             )}
-          </div>
         </div>
       </div>
     )

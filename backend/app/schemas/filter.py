@@ -1,6 +1,6 @@
 """Pydantic schemas for advanced filters and slicers."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Dict, Any, Union, Literal
 from datetime import datetime, date
 from uuid import UUID
@@ -295,12 +295,16 @@ class SavedFilterPreset(BaseModel):
     description: Optional[str] = None
     dashboard_id: Optional[UUID] = None
     chart_id: Optional[UUID] = None
-    filters: List[FilterCondition] = Field(default_factory=list)
-    slicers: List[SlicerConfig] = Field(default_factory=list)
+    filters: Optional[List[FilterCondition]] = Field(default_factory=list)
+    slicers: Optional[List[SlicerConfig]] = Field(default_factory=list)
     is_default: bool = False
     created_by: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
+
+    @validator('filters', 'slicers', pre=True, always=True)
+    def ensure_list(cls, v):
+        return v if v is not None else []
 
     class Config:
         from_attributes = True

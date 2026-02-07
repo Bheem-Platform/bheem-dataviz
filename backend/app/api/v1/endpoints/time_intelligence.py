@@ -56,10 +56,6 @@ async def calculate_time_intelligence(
     service = get_time_intelligence_service()
     response = service.calculate(request)
 
-    print(f"DEBUG: Request functions count: {len(request.functions)}")
-    print(f"DEBUG: Connection type: {conn.type}")
-    print(f"DEBUG: Response success: {response.success}")
-
     if not response.success:
         return response
 
@@ -84,9 +80,6 @@ async def calculate_time_intelligence(
         )
 
         try:
-            print(f"DEBUG: Executing for func {func.id}, conn type: {conn.type}")
-            print(f"DEBUG: SQL: {sql[:300]}")
-
             # Execute query based on connection type
             if conn.type == ConnectionType.postgresql:
                 conn_str = postgres_service.build_connection_string(
@@ -112,8 +105,6 @@ async def calculate_time_intelligence(
                 # Unsupported connection type - return without values
                 updated_results.append(result_info)
                 continue
-
-            print(f"DEBUG: Query result: {query_result}")
 
             # Parse query results
             if query_result and query_result.get("rows"):
@@ -143,8 +134,6 @@ async def calculate_time_intelligence(
                     elif value is None and isinstance(val, (int, float, Decimal)):
                         # First numeric column as value (fallback)
                         value = float(val)
-
-                print(f"DEBUG: Extracted value={value}, comparison={comparison_value}, pct={pct_change}")
 
                 updated_results.append(TimeIntelligenceResult(
                     function_id=func.id,
@@ -188,7 +177,6 @@ async def calculate_time_intelligence(
         results=updated_results,
         query=response.query,
     )
-    print(f"DEBUG: Final response: {final_response.model_dump()}")
     return final_response
 
 

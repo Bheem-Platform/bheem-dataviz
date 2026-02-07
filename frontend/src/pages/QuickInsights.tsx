@@ -31,6 +31,9 @@ import {
   ExternalLink,
   Bell,
   X,
+  Sparkles,
+  Layers,
+  Lightbulb,
 } from 'lucide-react';
 import {
   Insight,
@@ -57,10 +60,10 @@ const insightIcons: Record<InsightType, React.ElementType> = {
   significant_change: Activity,
 };
 
-const severityColors: Record<InsightSeverity, { bg: string; text: string; border: string }> = {
-  high: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', border: 'border-red-200 dark:border-red-800' },
-  medium: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800' },
-  low: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-800' },
+const severityColors: Record<InsightSeverity, { bg: string; text: string; border: string; icon: string }> = {
+  high: { bg: 'bg-red-50 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', border: 'border-red-200 dark:border-red-800', icon: 'text-red-500' },
+  medium: { bg: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800', icon: 'text-amber-500' },
+  low: { bg: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-800', icon: 'text-blue-500' },
 };
 
 interface Connection {
@@ -309,60 +312,74 @@ export function QuickInsights() {
   };
 
   return (
-    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 via-white to-indigo-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-indigo-950/20">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Quick Insights
-              </h1>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                AI-powered data analysis and pattern detection
-              </p>
+      <div className="px-6 lg:px-8 py-6 border-b border-gray-200/60 dark:border-gray-700/60 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto">
+          {/* Title Row */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/25">
+                <Lightbulb className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Quick Insights
+                </h1>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                  AI-powered data analysis and pattern detection
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               {/* Connection Dropdown */}
-              <select
-                value={selectedConnection}
-                onChange={(e) => setSelectedConnection(e.target.value)}
-                disabled={connectionsLoading}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:opacity-50"
-              >
-                <option value="">
-                  {connectionsLoading ? 'Loading...' : 'All Connections'}
-                </option>
-                {connections.map((conn) => (
-                  <option key={conn.id} value={conn.id}>
-                    {conn.name} ({conn.type})
+              <div className="relative min-w-[200px]">
+                <Database className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <select
+                  value={selectedConnection}
+                  onChange={(e) => setSelectedConnection(e.target.value)}
+                  disabled={connectionsLoading}
+                  className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all disabled:opacity-50"
+                >
+                  <option value="">
+                    {connectionsLoading ? 'Loading...' : 'Select Connection'}
                   </option>
-                ))}
-              </select>
+                  {connections.map((conn) => (
+                    <option key={conn.id} value={conn.id}>
+                      {conn.name} ({conn.type})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
 
               {/* Table Dropdown */}
-              <select
-                value={selectedTable}
-                onChange={(e) => setSelectedTable(e.target.value)}
-                disabled={tablesLoading || !selectedConnection}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:opacity-50"
-              >
-                <option value="">
-                  {tablesLoading ? 'Loading tables...' : !selectedConnection ? 'Select connection first' : 'Select Table'}
-                </option>
-                {tables.map((t) => (
-                  <option key={`${t.schema_name}.${t.table_name}`} value={`${t.schema_name}.${t.table_name}`}>
-                    {t.schema_name}.{t.table_name} {t.row_count ? `(${t.row_count} rows)` : ''}
+              <div className="relative min-w-[220px]">
+                <Layers className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <select
+                  value={selectedTable}
+                  onChange={(e) => setSelectedTable(e.target.value)}
+                  disabled={tablesLoading || !selectedConnection}
+                  className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all disabled:opacity-50"
+                >
+                  <option value="">
+                    {tablesLoading ? 'Loading...' : !selectedConnection ? 'Select connection first' : 'Select Table'}
                   </option>
-                ))}
-              </select>
+                  {tables.map((t) => (
+                    <option key={`${t.schema_name}.${t.table_name}`} value={`${t.schema_name}.${t.table_name}`}>
+                      {t.schema_name}.{t.table_name} {t.row_count ? `(${t.row_count} rows)` : ''}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
 
               <button
                 onClick={analyzeDataSource}
                 disabled={isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                className="group flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
-                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
                 Analyze
               </button>
             </div>
@@ -370,34 +387,49 @@ export function QuickInsights() {
 
           {/* Error Message */}
           {error && (
-            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 text-sm flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-4 h-4 text-red-500" />
+              </div>
+              {error}
             </div>
           )}
 
           {/* Summary Cards */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Insights</div>
-              <div className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-5 hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
+                <Sparkles className="w-4 h-4 text-indigo-500" />
+                <span>Total Insights</span>
+              </div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {summary.total}
               </div>
             </div>
-            <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-              <div className="text-sm font-medium text-red-600 dark:text-red-400">High Priority</div>
-              <div className="mt-1 text-2xl font-semibold text-red-700 dark:text-red-300">
+            <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-5 hover:shadow-xl hover:shadow-red-500/10 hover:border-red-300 dark:hover:border-red-600 transition-all duration-300">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
+                <AlertTriangle className="w-4 h-4 text-red-500" />
+                <span>High Priority</span>
+              </div>
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                 {summary.high}
               </div>
             </div>
-            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
-              <div className="text-sm font-medium text-amber-600 dark:text-amber-400">Medium Priority</div>
-              <div className="mt-1 text-2xl font-semibold text-amber-700 dark:text-amber-300">
+            <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-5 hover:shadow-xl hover:shadow-amber-500/10 hover:border-amber-300 dark:hover:border-amber-600 transition-all duration-300">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
+                <Activity className="w-4 h-4 text-amber-500" />
+                <span>Medium Priority</span>
+              </div>
+              <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                 {summary.medium}
               </div>
             </div>
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-              <div className="text-sm font-medium text-blue-600 dark:text-blue-400">Low Priority</div>
-              <div className="mt-1 text-2xl font-semibold text-blue-700 dark:text-blue-300">
+            <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-5 hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
+                <Info className="w-4 h-4 text-blue-500" />
+                <span>Low Priority</span>
+              </div>
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {summary.low}
               </div>
             </div>
@@ -405,273 +437,284 @@ export function QuickInsights() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
-        <div className="flex gap-6">
-          {/* Sidebar Filters */}
-          <div className="w-64 flex-shrink-0">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sticky top-6">
-              <h3 className="font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Filter className="w-4 h-4" />
-                Filters
-              </h3>
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex gap-6">
+            {/* Sidebar Filters */}
+            <div className="w-64 flex-shrink-0">
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-5 sticky top-6">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-indigo-500" />
+                  Filters
+                </h3>
 
-              {/* Severity Filter */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Severity
-                </label>
-                <select
-                  value={selectedSeverity}
-                  onChange={(e) => setSelectedSeverity(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                >
-                  <option value="all">All Severities</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-              </div>
+                {/* Severity Filter */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Severity
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedSeverity}
+                      onChange={(e) => setSelectedSeverity(e.target.value as any)}
+                      className="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                    >
+                      <option value="all">All Severities</option>
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
 
-              {/* Type Filters */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Insight Types
-                </label>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {(Object.keys(INSIGHT_TYPE_LABELS) as InsightType[]).map((type) => {
-                    const Icon = insightIcons[type];
-                    const count = insightsByType[type]?.length || 0;
-                    return (
-                      <label
-                        key={type}
-                        className="flex items-center gap-2 text-sm cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedTypes.length === 0 || selectedTypes.includes(type)}
-                          onChange={() => toggleTypeFilter(type)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <Icon className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300 flex-1">
-                          {INSIGHT_TYPE_LABELS[type]}
-                        </span>
-                        <span className="text-gray-400 text-xs">{count}</span>
-                      </label>
-                    );
-                  })}
+                {/* Type Filters */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Insight Types
+                  </label>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {(Object.keys(INSIGHT_TYPE_LABELS) as InsightType[]).map((type) => {
+                      const Icon = insightIcons[type];
+                      const count = insightsByType[type]?.length || 0;
+                      const isSelected = selectedTypes.length === 0 || selectedTypes.includes(type);
+                      return (
+                        <label
+                          key={type}
+                          className={`flex items-center gap-3 text-sm cursor-pointer p-2 rounded-lg transition-colors ${
+                            isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleTypeFilter(type)}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <Icon className={`w-4 h-4 ${isSelected ? 'text-indigo-500' : 'text-gray-400'}`} />
+                          <span className={`flex-1 ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+                            {INSIGHT_TYPE_LABELS[type]}
+                          </span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                            count > 0 ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
+                          }`}>
+                            {count}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <button className="w-full px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                    <Download className="w-4 h-4" />
+                    Export Insights
+                  </button>
                 </div>
               </div>
+            </div>
 
-              {/* Actions */}
-              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button className="w-full px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center justify-center gap-2">
-                  <Download className="w-4 h-4" />
-                  Export Insights
+            {/* Main Content */}
+            <div className="flex-1 min-w-0">
+              {/* Results header */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  Showing {sortedInsights.length} of {insights.length} insights
+                </span>
+                <button
+                  onClick={() => setShowDismissed(!showDismissed)}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    showDismissed
+                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {showDismissed ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  {showDismissed ? 'Showing Dismissed' : 'Show Dismissed'}
                 </button>
               </div>
-            </div>
-          </div>
 
-          {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            {/* Results header */}
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Showing {sortedInsights.length} of {insights.length} insights
-              </span>
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
-                  {showDismissed ? (
-                    <Eye className="w-4 h-4" />
-                  ) : (
-                    <EyeOff className="w-4 h-4" />
-                  )}
-                  <input
-                    type="checkbox"
-                    checked={showDismissed}
-                    onChange={(e) => setShowDismissed(e.target.checked)}
-                    className="sr-only"
-                  />
-                  Show Dismissed
-                </label>
-              </div>
-            </div>
-
-            {/* Loading State */}
-            {isLoading && (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
+              {/* Loading State */}
+              {isLoading && (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center mb-4 animate-pulse">
+                    <RefreshCw className="w-8 h-8 text-white animate-spin" />
+                  </div>
                   <p className="text-gray-500 dark:text-gray-400">Analyzing data...</p>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Insights List */}
-            {!isLoading && (
-              <div className="space-y-4">
-                {sortedInsights.map((insight) => {
-                  const Icon = insightIcons[insight.type] || Activity;
-                  const colors = severityColors[insight.severity] || severityColors.low;
-                  const isExpanded = expandedInsights.has(insight.id);
-                  const isDismissed = dismissedInsights.has(insight.id);
+              {/* Insights List */}
+              {!isLoading && (
+                <div className="space-y-4">
+                  {sortedInsights.map((insight) => {
+                    const Icon = insightIcons[insight.type] || Activity;
+                    const colors = severityColors[insight.severity] || severityColors.low;
+                    const isExpanded = expandedInsights.has(insight.id);
+                    const isDismissed = dismissedInsights.has(insight.id);
 
-                  return (
-                    <div
-                      key={insight.id}
-                      className={`bg-white dark:bg-gray-800 rounded-lg shadow border ${colors.border} ${isDismissed ? 'opacity-60' : ''}`}
-                    >
-                      {/* Insight Header */}
+                    return (
                       <div
-                        className="p-4 cursor-pointer"
-                        onClick={() => toggleExpand(insight.id)}
+                        key={insight.id}
+                        className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border ${colors.border} overflow-hidden hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 ${isDismissed ? 'opacity-60' : ''}`}
                       >
-                        <div className="flex items-start gap-4">
-                          <div className={`p-2 rounded-lg ${colors.bg}`}>
-                            <Icon className={`w-5 h-5 ${colors.text}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              {isDismissed && (
-                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
-                                  Dismissed
-                                </span>
-                              )}
-                              <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${colors.bg} ${colors.text}`}>
-                                {insight.severity}
-                              </span>
-                              <span className="text-xs text-gray-400">
-                                {INSIGHT_TYPE_LABELS[insight.type] || insight.type}
-                              </span>
-                              <span className="text-xs text-gray-400">
-                                · {Math.round((insight.confidence || 0) * 100)}% confidence
-                              </span>
+                        {/* Insight Header */}
+                        <div
+                          className="p-5 cursor-pointer"
+                          onClick={() => toggleExpand(insight.id)}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className={`w-12 h-12 rounded-xl ${colors.bg} ${colors.border} border flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                              <Icon className={`w-6 h-6 ${colors.icon}`} />
                             </div>
-                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                              {insight.title}
-                            </h3>
-                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                              {insight.description}
-                            </p>
-                          </div>
-                          <button className="p-1 text-gray-400 hover:text-gray-600">
-                            {isExpanded ? (
-                              <ChevronDown className="w-5 h-5" />
-                            ) : (
-                              <ChevronRight className="w-5 h-5" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Expanded Details */}
-                      {isExpanded && (
-                        <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-700">
-                          <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="text-gray-500 dark:text-gray-400">Affected Columns:</span>
-                              <div className="mt-1 flex flex-wrap gap-1">
-                                {(insight.affected_columns || []).map((col) => (
-                                  <span
-                                    key={col}
-                                    className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 text-xs"
-                                  >
-                                    {col}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                                {isDismissed && (
+                                  <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
+                                    Dismissed
                                   </span>
-                                ))}
+                                )}
+                                <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${colors.bg} ${colors.text} capitalize`}>
+                                  {insight.severity}
+                                </span>
+                                <span className="text-xs text-gray-400 dark:text-gray-500">
+                                  {INSIGHT_TYPE_LABELS[insight.type] || insight.type}
+                                </span>
+                                <span className="text-xs text-gray-400 dark:text-gray-500">
+                                  · {Math.round((insight.confidence || 0) * 100)}% confidence
+                                </span>
                               </div>
+                              <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                                {insight.title}
+                              </h3>
+                              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                {insight.description}
+                              </p>
                             </div>
-                            {insight.suggested_chart_type && (
-                              <div>
-                                <span className="text-gray-500 dark:text-gray-400">Suggested Visualization:</span>
-                                <div className="mt-1 text-gray-700 dark:text-gray-300">
-                                  {insight.suggested_chart_type} chart
+                            <button className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400 transition-colors">
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Expanded Details */}
+                        {isExpanded && (
+                          <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-700">
+                            <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                              <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-2">Affected Columns</span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {(insight.affected_columns || []).map((col) => (
+                                    <span
+                                      key={col}
+                                      className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg text-indigo-700 dark:text-indigo-300 text-xs font-medium"
+                                    >
+                                      {col}
+                                    </span>
+                                  ))}
                                 </div>
                               </div>
-                            )}
-                          </div>
-
-                          {/* Details from insight */}
-                          {insight.details && Object.keys(insight.details).length > 0 && (
-                            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-                                Details
-                              </h4>
-                              <dl className="grid grid-cols-2 gap-2 text-sm">
-                                {Object.entries(insight.details).map(([key, value]) => (
-                                  <div key={key}>
-                                    <dt className="text-gray-500 dark:text-gray-400 capitalize">
-                                      {key.replace(/_/g, ' ')}:
-                                    </dt>
-                                    <dd className="text-gray-900 dark:text-white font-medium">
-                                      {typeof value === 'number'
-                                        ? value.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                                        : String(value)}
-                                    </dd>
-                                  </div>
-                                ))}
-                              </dl>
+                              {insight.suggested_chart_type && (
+                                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 block mb-2">Suggested Visualization</span>
+                                  <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/50 rounded-lg text-purple-700 dark:text-purple-300 text-xs font-medium capitalize">
+                                    {insight.suggested_chart_type} chart
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                          )}
 
-                          {/* Actions */}
-                          <div className="mt-4 flex items-center gap-2">
-                            {dismissedInsights.has(insight.id) ? (
-                              <button
-                                onClick={() => handleRestore(insight.id)}
-                                className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1"
-                              >
-                                <RefreshCw className="w-3 h-3" />
-                                Restore
-                              </button>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => handleExploreInCharts(insight)}
-                                  className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  Explore in Charts
-                                </button>
-                                <button
-                                  onClick={() => handleCreateAlert(insight)}
-                                  className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1"
-                                >
-                                  <Bell className="w-3 h-3" />
-                                  Create Alert
-                                </button>
-                                <button
-                                  onClick={() => handleDismiss(insight.id)}
-                                  className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1"
-                                >
-                                  <X className="w-3 h-3" />
-                                  Dismiss
-                                </button>
-                              </>
+                            {/* Details from insight */}
+                            {insight.details && Object.keys(insight.details).length > 0 && (
+                              <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+                                <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-3 flex items-center gap-2">
+                                  <Info className="w-3 h-3" />
+                                  Details
+                                </h4>
+                                <dl className="grid grid-cols-2 gap-3 text-sm">
+                                  {Object.entries(insight.details).map(([key, value]) => (
+                                    <div key={key} className="flex flex-col">
+                                      <dt className="text-xs text-gray-500 dark:text-gray-400 capitalize mb-0.5">
+                                        {key.replace(/_/g, ' ')}
+                                      </dt>
+                                      <dd className="text-gray-900 dark:text-white font-medium">
+                                        {typeof value === 'number'
+                                          ? value.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                                          : String(value)}
+                                      </dd>
+                                    </div>
+                                  ))}
+                                </dl>
+                              </div>
                             )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
 
-                {sortedInsights.length === 0 && !isLoading && (
-                  <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
-                    <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      No insights found
-                    </h3>
-                    <p className="mt-1 text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                      {selectedTable
-                        ? 'Click Analyze to generate insights for the selected table.'
-                        : 'Select a connection and table, then click Analyze to generate insights.'}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+                            {/* Actions */}
+                            <div className="mt-4 flex items-center gap-2">
+                              {dismissedInsights.has(insight.id) ? (
+                                <button
+                                  onClick={() => handleRestore(insight.id)}
+                                  className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 flex items-center gap-2 font-medium shadow-lg shadow-emerald-500/25 transition-all"
+                                >
+                                  <RefreshCw className="w-4 h-4" />
+                                  Restore
+                                </button>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleExploreInCharts(insight)}
+                                    className="px-4 py-2 text-sm bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 flex items-center gap-2 font-medium shadow-lg shadow-indigo-500/25 transition-all"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                    Explore in Charts
+                                  </button>
+                                  <button
+                                    onClick={() => handleCreateAlert(insight)}
+                                    className="px-4 py-2 text-sm border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 font-medium transition-colors"
+                                  >
+                                    <Bell className="w-4 h-4" />
+                                    Create Alert
+                                  </button>
+                                  <button
+                                    onClick={() => handleDismiss(insight.id)}
+                                    className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl flex items-center gap-2 transition-colors"
+                                  >
+                                    <X className="w-4 h-4" />
+                                    Dismiss
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {sortedInsights.length === 0 && !isLoading && (
+                    <div className="flex flex-col items-center justify-center py-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60">
+                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center mb-6 shadow-lg shadow-purple-500/25">
+                        <Lightbulb className="w-10 h-10 text-white" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        No insights found
+                      </h3>
+                      <p className="text-gray-500 dark:text-gray-400 max-w-md text-center">
+                        {selectedTable
+                          ? 'Click Analyze to generate insights for the selected table.'
+                          : 'Select a connection and table, then click Analyze to generate insights.'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

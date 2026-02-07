@@ -1,4 +1,5 @@
-import { Outlet, NavLink } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
 import {
   LayoutDashboard,
   Database,
@@ -33,8 +34,21 @@ import {
   Activity,
   CheckCircle,
   Lock,
+  Rocket,
+  History,
+  ShieldCheck,
+  Table2,
+  Package,
+  TrendingUp,
+  Home,
+  User,
+  LogOut,
+  Moon,
+  Sun,
+  Menu,
+  X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 
 interface NavItem {
@@ -52,7 +66,8 @@ const navigationSections: NavSection[] = [
   {
     title: 'Core',
     items: [
-      { name: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
+      { name: 'Home', href: '/', icon: Home },
+      { name: 'Dashboards', href: '/dashboards', icon: LayoutDashboard },
       { name: 'Quick Charts', href: '/quick-charts', icon: Sparkles },
       { name: 'Charts', href: '/charts/new', icon: BarChart3 },
       { name: 'KPIs', href: '/kpis', icon: Gauge },
@@ -89,6 +104,19 @@ const navigationSections: NavSection[] = [
     ]
   },
   {
+    title: 'Governance',
+    items: [
+      { name: 'Data Governance', href: '/governance', icon: Shield },
+      { name: 'Deployments', href: '/deployments', icon: Rocket },
+      { name: 'Data Lineage', href: '/lineage', icon: GitBranch },
+      { name: 'Version Control', href: '/versions', icon: History },
+      { name: 'Data Quality', href: '/quality', icon: ShieldCheck },
+      { name: 'Schema Tracking', href: '/schema', icon: Table2 },
+      { name: 'App Bundling', href: '/apps', icon: Package },
+      { name: 'User Analytics', href: '/analytics', icon: TrendingUp },
+    ]
+  },
+  {
     title: 'Reports',
     items: [
       { name: 'Reports', href: '/reports', icon: FileBarChart },
@@ -112,8 +140,40 @@ const navigationSections: NavSection[] = [
 ]
 
 export function Layout() {
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [expandedSections, setExpandedSections] = useState<string[]>(['Core', 'Data'])
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark')
+    }
+    return false
+  })
+  const profileRef = useRef<HTMLDivElement>(null)
+
+  // Get user display name and initials
+  const displayName = user?.name || user?.email?.split('@')[0] || 'User'
+  const userEmail = user?.email || ''
+  const userInitials = displayName
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const toggleSection = (title: string) => {
     setExpandedSections(prev =>
@@ -123,95 +183,261 @@ export function Layout() {
     )
   }
 
-  return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          'flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300',
-          collapsed ? 'w-16' : 'w-64'
-        )}
-      >
-        {/* Logo */}
-        <div className="flex items-center h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-white" />
-            </div>
-            {!collapsed && (
-              <span className="font-semibold text-gray-900 dark:text-white">
-                Bheem DataViz
-              </span>
-            )}
-          </div>
-        </div>
+  const toggleDarkMode = () => {
+    const newMode = !darkMode
+    setDarkMode(newMode)
+    if (newMode) {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+    }
+  }
 
-        {/* Navigation */}
-        <nav className="flex-1 px-2 py-4 space-y-2 overflow-y-auto">
-          {navigationSections.map((section) => (
-            <div key={section.title}>
-              {!collapsed && (
-                <button
-                  onClick={() => toggleSection(section.title)}
-                  className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-gray-700 dark:hover:text-gray-300"
-                >
-                  {section.title}
-                  <ChevronDown
-                    className={cn(
-                      'w-4 h-4 transition-transform',
-                      expandedSections.includes(section.title) ? 'rotate-0' : '-rotate-90'
-                    )}
-                  />
-                </button>
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
+  return (
+    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
+      {/* ========== GLOBAL TOP HEADER ========== */}
+      <header className="flex-shrink-0 h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-50">
+        <div className="h-full px-4 flex items-center justify-between">
+          {/* Left: Logo & Mobile Menu Toggle */}
+          <div className="flex items-center gap-4">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              ) : (
+                <Menu className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               )}
-              {(collapsed || expandedSections.includes(section.title)) && (
-                <div className="space-y-0.5 mt-1">
-                  {section.items.map((item) => (
+            </button>
+
+            {/* Logo */}
+            <NavLink to="/" className="flex items-center gap-3 group">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/25 group-hover:shadow-violet-500/40 group-hover:scale-105 transition-all">
+                <BarChart3 className="w-5 h-5 text-white" />
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 dark:from-violet-400 dark:to-fuchsia-400 bg-clip-text text-transparent">
+                  Bheem DataViz
+                </h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400 -mt-0.5">Analytics Platform</p>
+              </div>
+            </NavLink>
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Search (Desktop) */}
+            <div className="hidden md:block relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-48 lg:w-64 pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all"
+              />
+            </div>
+
+            {/* Notifications */}
+            <button className="relative p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+              <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+            </button>
+
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              {darkMode ? (
+                <Sun className="w-5 h-5 text-amber-500" />
+              ) : (
+                <Moon className="w-5 h-5 text-gray-600" />
+              )}
+            </button>
+
+            {/* Profile Dropdown */}
+            <div ref={profileRef} className="relative">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-2 p-1.5 pr-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-xs font-semibold text-white">
+                  {userInitials || <User className="w-4 h-4" />}
+                </div>
+                <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[120px] truncate">
+                  {displayName}
+                </span>
+                <ChevronDown className={cn(
+                  "w-4 h-4 text-gray-400 transition-transform",
+                  profileOpen && "rotate-180"
+                )} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {profileOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                  {/* User Info */}
+                  <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{displayName}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{userEmail}</p>
+                    {user?.role && (
+                      <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full capitalize">
+                        {user.role}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="py-1">
                     <NavLink
-                      key={item.name}
-                      to={item.href}
-                      className={({ isActive }) =>
-                        cn(
-                          'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm',
-                          isActive
-                            ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400'
-                            : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-                        )
-                      }
-                      title={collapsed ? item.name : undefined}
+                      to="/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      {!collapsed && <span>{item.name}</span>}
+                      <User className="w-4 h-4" />
+                      My Profile
                     </NavLink>
-                  ))}
+                    <NavLink
+                      to="/settings"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Settings
+                    </NavLink>
+                    <NavLink
+                      to="/billing"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      Billing
+                    </NavLink>
+                  </div>
+
+                  {/* Logout */}
+                  <div className="border-t border-gray-100 dark:border-gray-700 pt-1">
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-          ))}
-        </nav>
-
-        {/* Collapse button */}
-        <div className="p-2 border-t border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="flex items-center justify-center w-full px-3 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            {collapsed ? (
-              <ChevronRight className="w-5 h-5" />
-            ) : (
-              <>
-                <ChevronLeft className="w-5 h-5 mr-2" />
-                <span>Collapse</span>
-              </>
-            )}
-          </button>
+          </div>
         </div>
-      </aside>
+      </header>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-hidden">
-        <Outlet />
-      </main>
+      {/* ========== MAIN CONTAINER (Sidebar + Content) ========== */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Mobile Sidebar Overlay */}
+        {mobileMenuOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black/50 z-40"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
+        {/* Sidebar */}
+        <aside
+          className={cn(
+            'flex flex-col glass-sidebar transition-all duration-300 ease-in-out z-40',
+            // Desktop
+            'hidden lg:flex',
+            collapsed ? 'lg:w-16' : 'lg:w-64',
+            // Mobile
+            mobileMenuOpen && 'fixed inset-y-16 left-0 flex w-64'
+          )}
+        >
+          {/* Navigation */}
+          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto sidebar-scroll">
+            {navigationSections.map((section, sectionIndex) => (
+              <div key={section.title}>
+                {sectionIndex > 0 && !collapsed && (
+                  <div className="section-divider" />
+                )}
+                {!collapsed && (
+                  <button
+                    onClick={() => toggleSection(section.title)}
+                    className="section-header group"
+                  >
+                    <span>{section.title}</span>
+                    <ChevronDown
+                      className={cn(
+                        'w-3.5 h-3.5 transition-transform duration-200 opacity-60 group-hover:opacity-100',
+                        expandedSections.includes(section.title) ? 'rotate-0' : '-rotate-90'
+                      )}
+                    />
+                  </button>
+                )}
+                {(collapsed || expandedSections.includes(section.title)) && (
+                  <div className="space-y-0.5 mt-1">
+                    {section.items.map((item, itemIndex) => (
+                      <NavLink
+                        key={item.name}
+                        to={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={({ isActive }) =>
+                          cn(
+                            'nav-item',
+                            isActive && 'nav-item-active'
+                          )
+                        }
+                        title={collapsed ? item.name : undefined}
+                        style={{
+                          animationDelay: `${itemIndex * 30}ms`
+                        }}
+                      >
+                        <item.icon className={cn(
+                          'w-5 h-5 flex-shrink-0 nav-icon transition-transform duration-200',
+                          !collapsed && 'group-hover:scale-110'
+                        )} />
+                        {!collapsed && (
+                          <span className="truncate">{item.name}</span>
+                        )}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </nav>
+
+          {/* Collapse button (Desktop only) */}
+          <div className="hidden lg:block p-2 border-t border-white/10 dark:border-white/5">
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="flex items-center justify-center w-full px-3 py-2.5 glass-button rounded-xl text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
+            >
+              {collapsed ? (
+                <ChevronRight className="w-5 h-5" />
+              ) : (
+                <>
+                  <ChevronLeft className="w-5 h-5 mr-2" />
+                  <span className="text-sm font-medium">Collapse</span>
+                </>
+              )}
+            </button>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <main className="flex-1 overflow-hidden main-gradient-bg">
+          <Outlet />
+        </main>
+      </div>
     </div>
   )
 }
